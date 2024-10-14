@@ -1,53 +1,97 @@
 import streamlit as st
-from openai import OpenAI
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Show title and description.
-st.title("📄 Document question answering")
-st.write(
-    "Upload a document below and ask a question about it – GPT will answer! "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-)
+# Load dataset uploaded by the user
+st.title("📊 Generalized EDA Dashboard")
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+uploaded_data_file = st.file_uploader("Upload a dataset (.csv)", type=["csv"])
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+if uploaded_data_file:
+    # Read the dataset
+    data = pd.read_csv(uploaded_data_file)
 
-    # Let the user upload a file via `st.file_uploader`.
-    uploaded_file = st.file_uploader(
-        "Upload a document (.txt or .md)", type=("txt", "md")
-    )
+    # Sidebar for filtering
+    st.sidebar.title("Filter Options")
 
-    # Ask the user for a question via `st.text_area`.
-    question = st.text_area(
-        "Now ask a question about the document!",
-        placeholder="Can you give me a short summary?",
-        disabled=not uploaded_file,
-    )
+    # Dynamically get the column types (numeric, categorical)
+    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
+    categorical_columns = data.select_dtypes(include=['object', 'category']).columns.tolist()
 
-    if uploaded_file and question:
+    # Multi-select for categorical filtering
+    filters = {}
+    for col in categorical_columns:
+        unique_values = data[col].unique().tolist()
+        selected_values = st.sidebar.multiselect(f"Filter by {col}", unique_values, default=unique_values)
+        filters[col] = selected_values
 
-        # Process the uploaded file and question.
-        document = uploaded_file.read().decode()
-        messages = [
-            {
-                "role": "user",
-                "content": f"Here's a document: {document} \n\n---\n\n {question}",
-            }
-        ]
+    # Filter the data based on the user input
+    for col, selected_values in filters.items():
+        data = data[data[col].isin(selected_values)]
 
-        # Generate an answer using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            stream=True,
-        )
+    # Numeric sliders for filtering numeric columns
+    for col in numeric_columns:
+        min_val, max_val = data[col].min(), data[col].max()
+        selected_range = st.sidebar.slider(f"Range for {col}", float(min_val), float(max_val), (float(min_val), float(max_val)))
+        data = data[(data[col] >= selected_range[0]) & (data[col] <= selected_range[1])]
 
-        # Stream the response to the app using `st.write_stream`.
-        st.write_stream(stream)
+    # Metrics Overview for the entire dataset
+    st.subheader("Dataset Overview")
+    st.write(f"Number of rows: {len(data)}")
+    st.write(f"Number of columns: {data.shape[1]}")
+    st.write("Data types:")
+    st.write(data.dtypes)
+
+    # Show summary statistics
+    st.subheader("Summary Statistics")
+    st.write(data.describe())
+
+    # Visualization section
+    st.subheader("Visualize Your Data")
+
+    # Feature selection for visualization
+    if numeric_columns:
+        st.subheader('Select Features for Visualization')
+
+        x_axis = st.selectbox('Select X-axis feature (numeric)', options=numeric_columns, index=0)
+        y_axis = st.selectbox('Select Y-axis feature (numeric)', options=numeric_columns, index=1)
+
+        # Visualization type selection
+        plot_type = st.selectbox("Select Visualization Type", ["Scatter Plot", "Line Plot", "Bar Plot", "Histogram"])
+
+        # Generate plots based on user selection
+        if plot_type == "Scatter Plot":
+            st.subheader(f"Scatter Plot: {x_axis} vs {y_axis}")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.scatterplot(data=data, x=x_axis, y=y_axis, hue=categorical_columns[0] if categorical_columns else None, ax=ax)
+            plt.title(f"Scatter Plot of {x_axis} vs {y_axis}")
+            st.pyplot(fig)
+
+        elif plot_type == "Line Plot":
+            st.subheader(f"Line Plot: {x_axis} vs {y_axis}")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.lineplot(data=data, x=x_axis, y=y_axis, hue=categorical_columns[0] if categorical_columns else None, ax=ax)
+            plt.title(f"Line Plot of {x_axis} vs {y_axis}")
+            st.pyplot(fig)
+
+        elif plot_type == "Bar Plot":
+            st.subheader(f"Bar Plot: {x_axis} vs {y_axis}")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.barplot(data=data, x=x_axis, y=y_axis, hue=categorical_columns[0] if categorical_columns else None, ax=ax)
+            plt.title(f"Bar Plot of {x_axis} vs {y_axis}")
+            st.pyplot(fig)
+
+        elif plot_type == "Histogram":
+            st.subheader(f"Histogram of {x_axis}")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.histplot(data[x_axis], bins=30, kde=True, ax=ax)
+            plt.title(f"Histogram of {x_axis}")
+            st.pyplot(fig)
+
+    else:
+        st.warning("No numeric columns available for plotting.")
+
+    # Display filtered data table
+    st.subheader("Filtered Data Table")
+    st.dataframe(data)

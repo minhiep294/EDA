@@ -163,28 +163,63 @@ if stack_cat1 and stack_cat2:
 # Section 3: Three Variable Analysis - Relationships with Multiple Variables and Uncertainty
 st.header("Three Variable Analysis")
 
-# Pair Plot
-st.subheader("Relationships with Multiple Variables (Three Variables)")
+# Bubble Chart
+st.subheader("Bubble Chart for Three Variables")
+st.write("A bubble chart is useful for visualizing relationships between three numerical variables, where the size of the bubble represents a third variable.")
 
-# Pair Plot
-st.write("### Pair Plot")
-pair_cols = st.multiselect("Select numerical variables for pair plot:", df.select_dtypes(include='number').columns, key="pair_cols")
-pair_hue = st.selectbox("Select categorical variable for color (optional):", [None] + list(df.select_dtypes(include='object').columns), key="pair_hue")
+bubble_x = st.selectbox("Select X-axis variable for bubble chart:", df.select_dtypes(include='number').columns, key="bubble_x")
+bubble_y = st.selectbox("Select Y-axis variable for bubble chart:", df.select_dtypes(include='number').columns, key="bubble_y")
+bubble_size = st.selectbox("Select variable for bubble size:", df.select_dtypes(include='number').columns, key="bubble_size")
+bubble_color = st.selectbox("Select categorical variable for bubble color (optional):", [None] + list(df.select_dtypes(include='object').columns), key="bubble_color")
 
-if len(pair_cols) >= 2:
-    fig = sns.pairplot(df, vars=pair_cols, hue=pair_hue)
-    st.pyplot(fig)
-
-# Uncertainty: Confidence Interval Plot
-st.subheader("Visualizing Uncertainty (Three Variables)")
-
-# Confidence Interval Plot
-st.write("### Confidence Interval Plot")
-ci_num = st.selectbox("Select numerical variable for confidence interval plot:", df.select_dtypes(include='number').columns, key="ci_num")
-ci_cat = st.selectbox("Select categorical variable for grouping (optional):", [None] + list(df.select_dtypes(include='object').columns), key="ci_cat")
-
-if ci_num:
+if bubble_x and bubble_y and bubble_size:
     fig, ax = plt.subplots()
-    sns.pointplot(x=ci_cat, y=ci_num, data=df, ci='sd', ax=ax)
-    ax.set_title(f"Confidence Interval Plot of {ci_num}" + (f" grouped by {ci_cat}" if ci_cat else ""))
+    sns.scatterplot(x=bubble_x, y=bubble_y, size=bubble_size, hue=bubble_color, sizes=(20, 200), data=df, ax=ax, legend="brief")
+    ax.set_title(f"Bubble Chart of {bubble_x} vs {bubble_y} with bubble size based on {bubble_size}")
     st.pyplot(fig)
+
+# 3D Scatter Plot
+st.subheader("3D Scatter Plot for Three Variables")
+st.write("A 3D scatter plot to visualize relationships among three numerical variables.")
+
+scatter_3d_x = st.selectbox("Select X-axis variable for 3D scatter plot:", df.select_dtypes(include='number').columns, key="scatter_3d_x")
+scatter_3d_y = st.selectbox("Select Y-axis variable for 3D scatter plot:", df.select_dtypes(include='number').columns, key="scatter_3d_y")
+scatter_3d_z = st.selectbox("Select Z-axis variable for 3D scatter plot:", df.select_dtypes(include='number').columns, key="scatter_3d_z")
+scatter_3d_color = st.selectbox("Select categorical variable for color (optional):", [None] + list(df.select_dtypes(include='object').columns), key="scatter_3d_color")
+
+if scatter_3d_x and scatter_3d_y and scatter_3d_z:
+    from mpl_toolkits.mplot3d import Axes3D
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    sc = ax.scatter(df[scatter_3d_x], df[scatter_3d_y], df[scatter_3d_z], c=df[scatter_3d_color].astype('category').cat.codes if scatter_3d_color else None, cmap='viridis', s=50)
+    ax.set_xlabel(scatter_3d_x)
+    ax.set_ylabel(scatter_3d_y)
+    ax.set_zlabel(scatter_3d_z)
+    ax.set_title(f"3D Scatter Plot of {scatter_3d_x}, {scatter_3d_y}, and {scatter_3d_z}")
+    if scatter_3d_color:
+        plt.colorbar(sc, ax=ax, label=scatter_3d_color)
+    st.pyplot(fig)
+
+# Facet Grid (Small Multiples)
+st.subheader("Facet Grid (Small Multiples)")
+st.write("Facet Grid is useful for visualizing distributions of numerical variables across levels of a categorical variable.")
+
+facet_col = st.selectbox("Select a categorical variable for facets:", df.select_dtypes(include='object').columns, key="facet_col")
+facet_num_x = st.selectbox("Select numerical variable for X-axis:", df.select_dtypes(include='number').columns, key="facet_num_x")
+facet_num_y = st.selectbox("Select numerical variable for Y-axis (optional):", [None] + list(df.select_dtypes(include='number').columns), key="facet_num_y")
+
+if facet_col and facet_num_x:
+    if facet_num_y:
+        # Scatter plot in Facet Grid
+        g = sns.FacetGrid(df, col=facet_col, height=4, aspect=1)
+        g.map_dataframe(sns.scatterplot, x=facet_num_x, y=facet_num_y)
+        g.set_axis_labels(f"{facet_num_x}", f"{facet_num_y}")
+    else:
+        # Histogram in Facet Grid
+        g = sns.FacetGrid(df, col=facet_col, height=4, aspect=1)
+        g.map_dataframe(sns.histplot, x=facet_num_x, kde=True)
+        g.set_axis_labels(f"{facet_num_x}", "Density")
+
+    g.add_legend()
+    g.fig.suptitle(f"Facet Grid of {facet_num_x} across {facet_col} categories", y=1.05)
+    st.pyplot(g)

@@ -80,9 +80,12 @@ if uploaded_file is not None:
 
     elif len(selected_vars) == 2:
         st.write("### Two Variable Visualization")
-        plot_type = st.selectbox("Select plot type:", ["Scatter Plot", "Line Chart"])
+        
+        # Let user choose which variable to assign to x and y axes
+        x_axis = st.selectbox("Select X-axis variable", selected_vars, index=0)
+        y_axis = st.selectbox("Select Y-axis variable", selected_vars, index=1 if len(selected_vars) > 1 else 0)
 
-        x_axis, y_axis = selected_vars
+        plot_type = st.selectbox("Select plot type:", ["Scatter Plot", "Line Chart"])
 
         plt.figure(figsize=(10, 6))
 

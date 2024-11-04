@@ -5,25 +5,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pandas.plotting import parallel_coordinates
 
-# Custom CSS for styling
-st.markdown(
-    """
-    <style>
-    .reportview-container {
-        background-color: #FFFFE0;  /* background */
-    }
-    .stApp {
-        color: #000000;  /* Black text color */
-        font-family: 'Times New Roman';  /* Font style */
-    }
-    h1, h2, h3 {
-        color: #3CB371;  /* Green color for headers */
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 # Function to generate analysis description
 def generate_analysis(feature, data):
     data[feature] = pd.to_numeric(data[feature], errors='coerce')
@@ -156,4 +137,55 @@ if uploaded_file is not None:
         elif plot_type == "Box Plot":
             sns.boxplot(data=data, x=x_axis, y=y_axis)
             plt.title(f'Box Plot of {y_axis} by {x_axis}')
-            plt.x
+            plt.xlabel(x_axis)
+            plt.ylabel(y_axis)
+
+        elif plot_type == "Line Graph":
+            plt.plot(data[x_axis], data[y_axis])
+            plt.title(f'Line Graph of {y_axis} vs {x_axis}')
+            plt.xlabel(x_axis)
+            plt.ylabel(y_axis)
+
+        elif plot_type == "Grouped Bar Chart":
+            data.groupby(x_axis)[y_axis].mean().plot(kind='bar')
+            plt.title(f'Grouped Bar Chart of {y_axis} by {x_axis}')
+            plt.xlabel(x_axis)
+            plt.ylabel(f'Mean {y_axis}')
+
+        elif plot_type == "Bubble Chart":
+            plt.scatter(data[x_axis], data[y_axis], s=data[y_axis]*10, alpha=0.5)
+            plt.title(f'Bubble Chart of {y_axis} vs {x_axis}')
+            plt.xlabel(x_axis)
+            plt.ylabel(y_axis)
+
+        elif plot_type == "Violin Chart":
+            sns.violinplot(x=x_axis, y=y_axis, data=data)
+            plt.title(f'Violin Chart of {y_axis} by {x_axis}')
+
+        st.pyplot(plt)
+
+    elif len(selected_vars) == 3:
+        st.write("### Three Variable Visualization")
+        plot_type = st.selectbox("Select plot type:", ["3D Scatter Plot", "Parallel Coordinates Plot"])
+
+        if plot_type == "3D Scatter Plot":
+            fig = plt.figure(figsize=(10, 6))
+            ax = fig.add_subplot(111, projection='3d')
+            ax.scatter(data[selected_vars[0]], data[selected_vars[1]], data[selected_vars[2]])
+            ax.set_xlabel(selected_vars[0])
+            ax.set_ylabel(selected_vars[1])
+            ax.set_zlabel(selected_vars[2])
+            plt.title('3D Scatter Plot of Selected Variables')
+            st.pyplot(plt)
+
+        elif plot_type == "Parallel Coordinates Plot":
+            plt.figure(figsize=(10, 6))
+            parallel_coordinates(data[selected_vars], class_column=selected_vars[0])
+            plt.title('Parallel Coordinates Plot')
+            st.pyplot(plt)
+
+    # AI Analysis
+    st.subheader("AI Analysis")
+    selected_feature = st.selectbox("Select feature for AI analysis:", data.columns)
+    analysis_description = generate_analysis(selected_feature, data)
+    st.write(analysis_description)

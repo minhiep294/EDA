@@ -75,7 +75,7 @@ if uploaded_file is not None:
     if len(selected_vars) == 1:
         st.write("### Single Variable Visualization")
         plot_type = st.selectbox("Select plot type:", [
-            "Line Chart", "Histogram", "Box Plot", "Density Plot", "Area Chart", "Dot Plot", "Frequency Polygon", 
+            "Line Chart", "Histogram", "Box Plot", 
             "Bar Chart (Categorical)", "Pie Chart (Categorical)"
         ])
 
@@ -117,7 +117,7 @@ if uploaded_file is not None:
     elif len(selected_vars) == 2:
         st.write("### Two Variable Visualization")
         plot_type = st.selectbox("Select plot type:", [
-            "Scatter Plot", "Box Plot", "Line Graph", "Grouped Bar Chart", "Bubble Chart", "Violin Chart"
+            "Scatter Plot", "Box Plot", "Line Graph", "Grouped Bar Chart"
         ])
 
         x_axis, y_axis = selected_vars

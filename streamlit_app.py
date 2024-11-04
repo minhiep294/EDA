@@ -8,7 +8,6 @@ from pandas.plotting import parallel_coordinates
 # Function to generate analysis description
 def generate_analysis(feature, data):
     data[feature] = pd.to_numeric(data[feature], errors='coerce')
-
     mean_value = data[feature].mean()
     std_value = data[feature].std()
     median_value = data[feature].median()
@@ -40,17 +39,38 @@ if uploaded_file is not None:
     st.write("Data has been uploaded:")
     st.dataframe(data)
 
+    # Filter Section
+    st.subheader("Filter Data")
+    filtered_data = data.copy()
+
+    # Create filters for categorical columns
+    categorical_cols = data.select_dtypes(include=['object']).columns
+    for col in categorical_cols:
+        unique_values = data[col].unique()
+        selected_values = st.multiselect(f"Filter by {col}:", unique_values, default=unique_values)
+        filtered_data = filtered_data[filtered_data[col].isin(selected_values)]
+    
+    # Create filters for numerical columns
+    numerical_cols = data.select_dtypes(include=[np.number]).columns
+    for col in numerical_cols:
+        min_val, max_val = float(data[col].min()), float(data[col].max())
+        selected_range = st.slider(f"Filter by {col}:", min_val, max_val, (min_val, max_val))
+        filtered_data = filtered_data[(filtered_data[col] >= selected_range[0]) & (filtered_data[col] <= selected_range[1])]
+
+    st.write("Filtered Data Preview:")
+    st.dataframe(filtered_data)
+
     # Analysis Options
     st.subheader("Data Analysis and Visualization")
 
     # Display Summary Statistics
     if st.checkbox("Show Summary Statistics"):
         st.write("Summary Statistics")
-        st.write(data.describe())
+        st.write(filtered_data.describe())
 
     # Variable Selection
     st.write("Select up to three variables to plot:")
-    selected_vars = st.multiselect("Variables:", data.columns, max_selections=3)
+    selected_vars = st.multiselect("Variables:", filtered_data.columns, max_selections=3)
     
     # Plot Type Selection based on the number of selected variables
     if len(selected_vars) == 1:
@@ -64,55 +84,55 @@ if uploaded_file is not None:
         feature = selected_vars[0]
         
         # Numeric Visualizations
-        if data[feature].dtype in [np.number, 'float64', 'int64']:
+        if filtered_data[feature].dtype in [np.number, 'float64', 'int64']:
             if plot_type == "Line Chart":
-                plt.plot(data[feature])
+                plt.plot(filtered_data[feature])
                 plt.title(f'Line Chart of {feature}')
                 plt.xlabel('Index')
                 plt.ylabel(feature)
 
             elif plot_type == "Histogram":
-                sns.histplot(data[feature], kde=True)
+                sns.histplot(filtered_data[feature], kde=True)
                 plt.title(f'Histogram of {feature}')
                 plt.xlabel(feature)
                 plt.ylabel('Frequency')
 
             elif plot_type == "Box Plot":
-                sns.boxplot(y=data[feature])
+                sns.boxplot(y=filtered_data[feature])
                 plt.title(f'Boxplot of {feature}')
 
             elif plot_type == "Density Plot":
-                sns.kdeplot(data[feature])
+                sns.kdeplot(filtered_data[feature])
                 plt.title(f'Density Plot of {feature}')
 
             elif plot_type == "Area Chart":
-                data[feature].plot(kind='area')
+                filtered_data[feature].plot(kind='area')
                 plt.title(f'Area Chart of {feature}')
                 plt.xlabel('Index')
                 plt.ylabel(feature)
 
             elif plot_type == "Dot Plot":
-                plt.plot(data.index, data[feature], 'o')
+                plt.plot(filtered_data.index, filtered_data[feature], 'o')
                 plt.title(f'Dot Plot of {feature}')
                 plt.xlabel('Index')
                 plt.ylabel(feature)
 
             elif plot_type == "Frequency Polygon":
-                sns.histplot(data[feature], kde=False, bins=30)
+                sns.histplot(filtered_data[feature], kde=False, bins=30)
                 plt.title(f'Frequency Polygon of {feature}')
                 plt.xlabel(feature)
                 plt.ylabel('Frequency')
 
         # Categorical Visualizations
-        elif data[feature].dtype == 'object':
+        elif filtered_data[feature].dtype == 'object':
             if plot_type == "Bar Chart (Categorical)":
-                data[feature].value_counts().plot(kind='bar')
+                filtered_data[feature].value_counts().plot(kind='bar')
                 plt.title(f'Bar Chart of {feature}')
                 plt.xlabel(feature)
                 plt.ylabel('Count')
 
             elif plot_type == "Pie Chart (Categorical)":
-                data[feature].value_counts().plot(kind='pie', autopct='%1.1f%%')
+                filtered_data[feature].value_counts().plot(kind='pie', autopct='%1.1f%%')
                 plt.title(f'Pie Chart of {feature}')
 
         st.pyplot(plt)
@@ -128,37 +148,37 @@ if uploaded_file is not None:
         plt.figure(figsize=(10, 6))
 
         if plot_type == "Scatter Plot":
-            sns.scatterplot(data=data, x=x_axis, y=y_axis)
+            sns.scatterplot(data=filtered_data, x=x_axis, y=y_axis)
             plt.title(f'Scatter Plot of {y_axis} vs {x_axis}')
             plt.xlabel(x_axis)
             plt.ylabel(y_axis)
 
         elif plot_type == "Box Plot":
-            sns.boxplot(data=data, x=x_axis, y=y_axis)
+            sns.boxplot(data=filtered_data, x=x_axis, y=y_axis)
             plt.title(f'Box Plot of {y_axis} by {x_axis}')
             plt.xlabel(x_axis)
             plt.ylabel(y_axis)
 
         elif plot_type == "Line Graph":
-            plt.plot(data[x_axis], data[y_axis])
+            plt.plot(filtered_data[x_axis], filtered_data[y_axis])
             plt.title(f'Line Graph of {y_axis} vs {x_axis}')
             plt.xlabel(x_axis)
             plt.ylabel(y_axis)
 
         elif plot_type == "Grouped Bar Chart":
-            data.groupby(x_axis)[y_axis].mean().plot(kind='bar')
+            filtered_data.groupby(x_axis)[y_axis].mean().plot(kind='bar')
             plt.title(f'Grouped Bar Chart of {y_axis} by {x_axis}')
             plt.xlabel(x_axis)
             plt.ylabel(f'Mean {y_axis}')
 
         elif plot_type == "Bubble Chart":
-            plt.scatter(data[x_axis], data[y_axis], s=data[y_axis]*10, alpha=0.5)
+            plt.scatter(filtered_data[x_axis], filtered_data[y_axis], s=filtered_data[y_axis]*10, alpha=0.5)
             plt.title(f'Bubble Chart of {y_axis} vs {x_axis}')
             plt.xlabel(x_axis)
             plt.ylabel(y_axis)
 
         elif plot_type == "Violin Chart":
-            sns.violinplot(x=x_axis, y=y_axis, data=data)
+            sns.violinplot(x=x_axis, y=y_axis, data=filtered_data)
             plt.title(f'Violin Chart of {y_axis} by {x_axis}')
 
         st.pyplot(plt)
@@ -170,7 +190,7 @@ if uploaded_file is not None:
         if plot_type == "3D Scatter Plot":
             fig = plt.figure(figsize=(10, 6))
             ax = fig.add_subplot(111, projection='3d')
-            ax.scatter(data[selected_vars[0]], data[selected_vars[1]], data[selected_vars[2]])
+            ax.scatter(filtered_data[selected_vars[0]], filtered_data[selected_vars[1]], filtered_data[selected_vars[2]])
             ax.set_xlabel(selected_vars[0])
             ax.set_ylabel(selected_vars[1])
             ax.set_zlabel(selected_vars[2])
@@ -179,6 +199,6 @@ if uploaded_file is not None:
 
         elif plot_type == "Parallel Coordinates Plot":
             plt.figure(figsize=(10, 6))
-            parallel_coordinates(data[selected_vars], class_column=selected_vars[0])
+            parallel_coordinates(filtered_data[selected_vars], class_column=selected_vars[0])
             plt.title('Parallel Coordinates Plot')
             st.pyplot(plt)

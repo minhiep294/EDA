@@ -41,19 +41,18 @@ if uploaded_file is not None:
     st.dataframe(data)
 
     # Analysis Options
-    st.sidebar.header("Analysis Options")
     st.subheader("Data Analysis and Visualization")
-    
-    # Summary Statistics
-    if st.sidebar.checkbox("Show Summary Statistics"):
+
+    # Display Summary Statistics
+    if st.checkbox("Show Summary Statistics"):
         st.write("Summary Statistics")
         st.write(data.describe())
 
     # Variable Selection
-    st.sidebar.subheader("Select Variables to Plot")
-    selected_vars = st.sidebar.multiselect("Select up to three variables to plot:", data.columns, max_selections=3)
+    st.write("Select up to three variables to plot:")
+    selected_vars = st.multiselect("Variables:", data.columns, max_selections=3)
     
-    # Plot Type Selection
+    # Plot Type Selection based on the number of selected variables
     if len(selected_vars) == 1:
         st.write("### Single Variable Visualization")
         plot_type = st.selectbox("Select plot type:", [

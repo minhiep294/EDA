@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pandas.plotting import parallel_coordinates
 
-# Function to generate analysis description
+# Function to generate a basic analysis description
 def generate_analysis(feature, data):
     data[feature] = pd.to_numeric(data[feature], errors='coerce')
     mean_value = data[feature].mean()
@@ -22,67 +22,68 @@ def generate_analysis(feature, data):
 
     return " ".join(description)
 
-# App title
-st.title("EDA Tool")
+# App title and description
+st.title("Comprehensive EDA Tool")
+st.markdown("### A structured, flexible approach to exploring any dataset.")
 
-# Upload Data section
-st.subheader("Upload Data File")
-uploaded_file = st.file_uploader("Choose a file to upload", type=["csv", "xlsx"])
+# Step 1: Upload Data
+st.subheader("Step 1: Upload Your Data File")
+uploaded_file = st.file_uploader("Choose a CSV or Excel file", type=["csv", "xlsx"])
 
 if uploaded_file is not None:
-    # Read data from the uploaded file
+    # Read data from uploaded file
     if uploaded_file.name.endswith('.csv'):
         data = pd.read_csv(uploaded_file, encoding='windows-1252')
     else:
         data = pd.read_excel(uploaded_file, engine='openpyxl')
     
-    st.write("Data has been uploaded:")
-    st.dataframe(data)
+    st.write("Data successfully uploaded!")
+    st.dataframe(data.head())
 
-    # Filter Section for Year and Bank Code
-    st.subheader("Filter Data by Year and Bank Code")
+    # Step 2: Filter Data by Key Columns
+    st.subheader("Step 2: Filter Data by Key Columns")
 
-    # Filter by Year if the column exists
+    # Filter by "Year" if it exists in the dataset
+    filtered_data = data.copy()
     if 'Year' in data.columns:
         unique_years = sorted(data['Year'].dropna().unique())
         selected_years = st.multiselect("Select Year(s):", unique_years, default=unique_years)
-        filtered_data = data[data['Year'].isin(selected_years)]
-    else:
-        filtered_data = data.copy()
-
-    # Filter by Bank Code if the column exists
+        filtered_data = filtered_data[filtered_data['Year'].isin(selected_years)]
+    
+    # Filter by "Bank Code" if it exists in the dataset
     if 'Bank Code' in filtered_data.columns:
         unique_bank_codes = filtered_data['Bank Code'].dropna().unique()
         selected_bank_codes = st.multiselect("Select Bank Code(s):", unique_bank_codes, default=unique_bank_codes)
         filtered_data = filtered_data[filtered_data['Bank Code'].isin(selected_bank_codes)]
-
+    
     st.write("Filtered Data Preview:")
-    st.dataframe(filtered_data)
+    st.dataframe(filtered_data.head())
 
-    # Analysis Options
-    st.subheader("Data Analysis and Visualization")
-
-    # Display Summary Statistics
+    # Step 3: Display Summary Statistics
+    st.subheader("Step 3: View Summary Statistics")
     if st.checkbox("Show Summary Statistics"):
-        st.write("Summary Statistics")
+        st.write("Summary Statistics:")
         st.write(filtered_data.describe())
 
-    # Variable Selection
-    st.write("Select up to three variables to plot:")
-    selected_vars = st.multiselect("Variables:", filtered_data.columns, max_selections=3)
+    # Step 4: Variable Analysis
+    st.subheader("Step 4: Analyze Individual Variables")
+    selected_feature = st.selectbox("Select feature for AI-driven analysis:", filtered_data.columns)
+    analysis_description = generate_analysis(selected_feature, filtered_data)
+    st.write(analysis_description)
+
+    # Step 5: Data Visualization
+    st.subheader("Step 5: Data Visualization")
+
+    # Select variables for visualization
+    selected_vars = st.multiselect("Choose up to three variables to visualize:", filtered_data.columns, max_selections=3)
     
-    # Plot Type Selection based on the number of selected variables
     if len(selected_vars) == 1:
         st.write("### Single Variable Visualization")
-        plot_type = st.selectbox("Select plot type:", [
-            "Line Chart", "Histogram", "Box Plot", 
-            "Bar Chart (Categorical)", "Pie Chart (Categorical)"
-        ])
+        plot_type = st.selectbox("Select plot type:", ["Line Chart", "Histogram", "Box Plot", "Bar Chart", "Pie Chart"])
 
-        plt.figure(figsize=(10, 6))
         feature = selected_vars[0]
+        plt.figure(figsize=(10, 6))
         
-        # Numeric Visualizations
         if filtered_data[feature].dtype in [np.number, 'float64', 'int64']:
             if plot_type == "Line Chart":
                 plt.plot(filtered_data[feature])
@@ -98,29 +99,29 @@ if uploaded_file is not None:
 
             elif plot_type == "Box Plot":
                 sns.boxplot(y=filtered_data[feature])
-                plt.title(f'Boxplot of {feature}')
+                plt.title(f'Box Plot of {feature}')
 
-        # Categorical Visualizations
         elif filtered_data[feature].dtype == 'object':
-            if plot_type == "Bar Chart (Categorical)":
+            if plot_type == "Bar Chart":
                 filtered_data[feature].value_counts().plot(kind='bar')
                 plt.title(f'Bar Chart of {feature}')
                 plt.xlabel(feature)
                 plt.ylabel('Count')
 
-            elif plot_type == "Pie Chart (Categorical)":
+            elif plot_type == "Pie Chart":
                 filtered_data[feature].value_counts().plot(kind='pie', autopct='%1.1f%%')
                 plt.title(f'Pie Chart of {feature}')
-
+        
         st.pyplot(plt)
 
     elif len(selected_vars) == 2:
         st.write("### Two Variable Visualization")
-        plot_type = st.selectbox("Select plot type:", [
-            "Scatter Plot", "Box Plot", "Line Graph", "Grouped Bar Chart"
-        ])
+        
+        # Select x and y axes
+        x_axis = st.selectbox("Select X-axis variable:", selected_vars)
+        y_axis = st.selectbox("Select Y-axis variable:", [var for var in selected_vars if var != x_axis])
 
-        x_axis, y_axis = selected_vars
+        plot_type = st.selectbox("Select plot type:", ["Scatter Plot", "Box Plot", "Line Graph", "Grouped Bar Chart"])
 
         plt.figure(figsize=(10, 6))
 
@@ -162,4 +163,10 @@ if uploaded_file is not None:
             ax.set_ylabel(selected_vars[1])
             ax.set_zlabel(selected_vars[2])
             plt.title('3D Scatter Plot of Selected Variables')
+            st.pyplot(plt)
+        
+        elif plot_type == "Parallel Coordinates Plot":
+            plt.figure(figsize=(10, 6))
+            parallel_coordinates(filtered_data[selected_vars], class_column=selected_vars[0])
+            plt.title('Parallel Coordinates Plot')
             st.pyplot(plt)

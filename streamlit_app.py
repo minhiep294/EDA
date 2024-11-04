@@ -81,28 +81,6 @@ if uploaded_file is not None:
                 sns.boxplot(y=data[feature])
                 plt.title(f'Boxplot of {feature}')
 
-            elif plot_type == "Density Plot":
-                sns.kdeplot(data[feature])
-                plt.title(f'Density Plot of {feature}')
-
-            elif plot_type == "Area Chart":
-                data[feature].plot(kind='area')
-                plt.title(f'Area Chart of {feature}')
-                plt.xlabel('Index')
-                plt.ylabel(feature)
-
-            elif plot_type == "Dot Plot":
-                plt.plot(data.index, data[feature], 'o')
-                plt.title(f'Dot Plot of {feature}')
-                plt.xlabel('Index')
-                plt.ylabel(feature)
-
-            elif plot_type == "Frequency Polygon":
-                sns.histplot(data[feature], kde=False, bins=30)
-                plt.title(f'Frequency Polygon of {feature}')
-                plt.xlabel(feature)
-                plt.ylabel('Frequency')
-
         # Categorical Visualizations
         elif data[feature].dtype == 'object':
             if plot_type == "Bar Chart (Categorical)":
@@ -151,16 +129,6 @@ if uploaded_file is not None:
             plt.xlabel(x_axis)
             plt.ylabel(f'Mean {y_axis}')
 
-        elif plot_type == "Bubble Chart":
-            plt.scatter(data[x_axis], data[y_axis], s=data[y_axis]*10, alpha=0.5)
-            plt.title(f'Bubble Chart of {y_axis} vs {x_axis}')
-            plt.xlabel(x_axis)
-            plt.ylabel(y_axis)
-
-        elif plot_type == "Violin Chart":
-            sns.violinplot(x=x_axis, y=y_axis, data=data)
-            plt.title(f'Violin Chart of {y_axis} by {x_axis}')
-
         st.pyplot(plt)
 
     elif len(selected_vars) == 3:
@@ -182,9 +150,3 @@ if uploaded_file is not None:
             parallel_coordinates(data[selected_vars], class_column=selected_vars[0])
             plt.title('Parallel Coordinates Plot')
             st.pyplot(plt)
-
-    # AI Analysis
-    st.subheader("AI Analysis")
-    selected_feature = st.selectbox("Select feature for AI analysis:", data.columns)
-    analysis_description = generate_analysis(selected_feature, data)
-    st.write(analysis_description)

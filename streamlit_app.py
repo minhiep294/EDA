@@ -1,107 +1,159 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+from pandas.plotting import parallel_coordinates
 
-# Title and Purpose of Analysis
-st.title("📊 General EDA Dashboard")
+# Custom CSS for styling
+st.markdown(
+    """
+    <style>
+    .reportview-container {
+        background-color: #FFFFE0;  /* background */
+    }
+    .stApp {
+        color: #000000;  /* Black text color */
+        font-family: 'Times New Roman';  /* Font style */
+    }
+    h1, h2, h3 {
+        color: #3CB371;  /* Green color for headers */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
-# Load dataset uploaded by the user
-uploaded_data_file = st.file_uploader("Upload a dataset (.csv)", type=["csv"])
+# Function to generate analysis description
+def generate_analysis(feature, data):
+    data[feature] = pd.to_numeric(data[feature], errors='coerce')
 
-if uploaded_data_file:
-    # Read the dataset
-    data = pd.read_csv(uploaded_data_file)
-
-    # Display raw data preview
-    st.subheader("Raw Data Preview")
-    st.write(data.head())  # Show first few rows of the uploaded dataset
-
-    # Descriptive Statistics
-    st.subheader("Descriptive Statistics")
-    st.write("The table below provides summary statistics for all numeric columns.")
-    st.write(data.describe())
-
-    # Sidebar filters for numeric and categorical columns
-    st.sidebar.title("Filter Options")
+    mean_value = data[feature].mean()
+    std_value = data[feature].std()
+    median_value = data[feature].median()
+    trend = "increasing" if data[feature].iloc[-1] > data[feature].iloc[0] else "decreasing"
     
-    numeric_columns = data.select_dtypes(include=['float64', 'int64']).columns.tolist()
-    categorical_columns = data.select_dtypes(include=['object']).columns.tolist()
+    description = [
+        f"The mean of {feature} is {mean_value:.2f}, with a standard deviation of {std_value:.2f}.",
+        f"The median value of {feature} is {median_value:.2f}.",
+        f"The trend is {trend} over the selected period.",
+        f"This indicates that {feature} has shown a {trend} trend recently."
+    ]
 
-    # Filtering by categorical column
-    selected_category_column = st.sidebar.selectbox("Select Categorical Column to Filter (if any)", categorical_columns)
-    if selected_category_column:
-        selected_category_values = st.sidebar.multiselect(f"Select values for {selected_category_column}", 
-                                                          data[selected_category_column].unique())
-        data = data[data[selected_category_column].isin(selected_category_values)]
+    return " ".join(description)
+
+# App title
+st.title("EDA Tool")
+
+# Upload Data section
+st.subheader("Upload Data File")
+uploaded_file = st.file_uploader("Choose a file to upload", type=["csv", "xlsx"])
+
+if uploaded_file is not None:
+    # Read data from the uploaded file
+    if uploaded_file.name.endswith('.csv'):
+        data = pd.read_csv(uploaded_file, encoding='windows-1252')
+    else:
+        data = pd.read_excel(uploaded_file, engine='openpyxl')
     
-    # Filtering by numeric range
-    selected_numeric_column = st.sidebar.selectbox("Select Numeric Column to Filter (if any)", numeric_columns)
-    if selected_numeric_column:
-        min_val, max_val = st.sidebar.slider(f"Select range for {selected_numeric_column}",
-                                             float(data[selected_numeric_column].min()), 
-                                             float(data[selected_numeric_column].max()), 
-                                             (float(data[selected_numeric_column].min()), 
-                                              float(data[selected_numeric_column].max())))
-        data = data[(data[selected_numeric_column] >= min_val) & (data[selected_numeric_column] <= max_val)]
+    st.write("Data has been uploaded:")
+    st.dataframe(data)
 
-    # Visualization section
-    st.subheader("Visualize Your Data")
+    # Analysis Options
+    st.sidebar.header("Analysis Options")
+    st.subheader("Data Analysis and Visualization")
+    
+    # Summary Statistics
+    if st.sidebar.checkbox("Show Summary Statistics"):
+        st.write("Summary Statistics")
+        st.write(data.describe())
 
-    # Chart Generation
-    st.subheader("Custom Chart Generator")
+    # Variable Selection
+    st.sidebar.subheader("Select Variables to Plot")
+    selected_vars = st.sidebar.multiselect("Select up to three variables to plot:", data.columns, max_selections=3)
+    
+    # Plot Type Selection
+    if len(selected_vars) == 1:
+        st.write("### Single Variable Visualization")
+        plot_type = st.selectbox("Select plot type:", [
+            "Line Chart", "Histogram", "Box Plot", "Density Plot", "Area Chart", "Dot Plot", "Frequency Polygon", 
+            "Bar Chart (Categorical)", "Pie Chart (Categorical)"
+        ])
 
-    # Select the type of chart
-    chart_type = st.selectbox("Select Chart Type", ["Bar Chart", "Line Chart", "Pie Chart", "Scatter Plot"])
+        plt.figure(figsize=(10, 6))
+        feature = selected_vars[0]
+        
+        # Numeric Visualizations
+        if data[feature].dtype in [np.number, 'float64', 'int64']:
+            if plot_type == "Line Chart":
+                plt.plot(data[feature])
+                plt.title(f'Line Chart of {feature}')
+                plt.xlabel('Index')
+                plt.ylabel(feature)
 
-    # Select variables for x, y, and hue (if needed)
-    x_var = st.selectbox("Select X-axis variable", data.columns)
-    y_var = st.selectbox("Select Y-axis variable", data.columns)
-    hue_var = st.selectbox("Select hue variable (optional)", [None] + list(data.columns))
+            elif plot_type == "Histogram":
+                sns.histplot(data[feature], kde=True)
+                plt.title(f'Histogram of {feature}')
+                plt.xlabel(feature)
+                plt.ylabel('Frequency')
 
-    # Convert y_var column to numeric if necessary for numerical aggregation
-    data[y_var] = pd.to_numeric(data[y_var], errors='coerce')
+            elif plot_type == "Box Plot":
+                sns.boxplot(y=data[feature])
+                plt.title(f'Boxplot of {feature}')
 
-    # Generate charts based on selection
-    fig, ax = plt.subplots(figsize=(10, 6))
+            elif plot_type == "Density Plot":
+                sns.kdeplot(data[feature])
+                plt.title(f'Density Plot of {feature}')
 
-    if chart_type == "Bar Chart":
-        sns.barplot(x=x_var, y=y_var, hue=hue_var, data=data, ax=ax)
-        ax.set_title(f"{y_var} by {x_var} (Bar Chart)")
-        ax.set_xlabel(x_var)
-        ax.set_ylabel(y_var)
+            elif plot_type == "Area Chart":
+                data[feature].plot(kind='area')
+                plt.title(f'Area Chart of {feature}')
+                plt.xlabel('Index')
+                plt.ylabel(feature)
 
-    elif chart_type == "Line Chart":
-        sns.lineplot(x=x_var, y=y_var, hue=hue_var, data=data, marker="o", ax=ax)
-        ax.set_title(f"{y_var} by {x_var} (Line Chart)")
-        ax.set_xlabel(x_var)
-        ax.set_ylabel(y_var)
+            elif plot_type == "Dot Plot":
+                plt.plot(data.index, data[feature], 'o')
+                plt.title(f'Dot Plot of {feature}')
+                plt.xlabel('Index')
+                plt.ylabel(feature)
 
-    elif chart_type == "Pie Chart":
-        # For Pie Chart, aggregate y_var based on categorical variable x_var
-        if pd.api.types.is_numeric_dtype(data[y_var]) and pd.api.types.is_categorical_dtype(data[x_var]):
-            pie_data = data.groupby(x_var)[y_var].sum()
-            fig, ax = plt.subplots(figsize=(8, 8))
-            ax.pie(pie_data, labels=pie_data.index, autopct='%1.1f%%', startangle=140)
-            ax.set_title(f"Percentage of {y_var} by {x_var}")
-        else:
-            st.warning("For Pie charts, select a categorical variable for X and a numeric variable for Y.")
+            elif plot_type == "Frequency Polygon":
+                sns.histplot(data[feature], kde=False, bins=30)
+                plt.title(f'Frequency Polygon of {feature}')
+                plt.xlabel(feature)
+                plt.ylabel('Frequency')
 
-    elif chart_type == "Scatter Plot":
-        sns.scatterplot(x=x_var, y=y_var, hue=hue_var, data=data, ax=ax)
-        ax.set_title(f"{y_var} vs {x_var} (Scatter Plot)")
-        ax.set_xlabel(x_var)
-        ax.set_ylabel(y_var)
+        # Categorical Visualizations
+        elif data[feature].dtype == 'object':
+            if plot_type == "Bar Chart (Categorical)":
+                data[feature].value_counts().plot(kind='bar')
+                plt.title(f'Bar Chart of {feature}')
+                plt.xlabel(feature)
+                plt.ylabel('Count')
 
-    # Display the chart
-    st.pyplot(fig)
+            elif plot_type == "Pie Chart (Categorical)":
+                data[feature].value_counts().plot(kind='pie', autopct='%1.1f%%')
+                plt.title(f'Pie Chart of {feature}')
 
-    # Sidebar for variable selection for correlation heatmap
-    st.sidebar.title("Variable Selection for Correlation Heatmap")
-    selected_columns = st.sidebar.multiselect("Select Variables for Correlation Plot", numeric_columns, default=numeric_columns[:3])
+        st.pyplot(plt)
 
-    # Correlation Heatmap
-    st.subheader("Correlation Heatmap")
-    heatmap_fig, ax = plt.subplots(figsize=(12, 8))
-    sns.heatmap(data[selected_columns].corr(), annot=True, cmap="coolwarm", ax=ax)
-    st.pyplot(heatmap_fig)
+    elif len(selected_vars) == 2:
+        st.write("### Two Variable Visualization")
+        plot_type = st.selectbox("Select plot type:", [
+            "Scatter Plot", "Box Plot", "Line Graph", "Grouped Bar Chart", "Bubble Chart", "Violin Chart"
+        ])
+
+        x_axis, y_axis = selected_vars
+
+        plt.figure(figsize=(10, 6))
+
+        if plot_type == "Scatter Plot":
+            sns.scatterplot(data=data, x=x_axis, y=y_axis)
+            plt.title(f'Scatter Plot of {y_axis} vs {x_axis}')
+            plt.xlabel(x_axis)
+            plt.ylabel(y_axis)
+
+        elif plot_type == "Box Plot":
+            sns.boxplot(data=data, x=x_axis, y=y_axis)
+            plt.title(f'Box Plot of {y_axis} by {x_axis}')
+            plt.x

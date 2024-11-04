@@ -182,9 +182,3 @@ if uploaded_file is not None:
             parallel_coordinates(data[selected_vars], class_column=selected_vars[0])
             plt.title('Parallel Coordinates Plot')
             st.pyplot(plt)
-
-    # AI Analysis
-    st.subheader("AI Analysis")
-    selected_feature = st.selectbox("Select feature for AI analysis:", data.columns)
-    analysis_description = generate_analysis(selected_feature, data)
-    st.write(analysis_description)

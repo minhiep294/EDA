@@ -44,8 +44,12 @@ if uploaded_file:
     st.write("Data Preview:")
     st.dataframe(df.head())
 
-    # Section 1: Data Cleaning
-    with st.expander("1. Data Cleaning", expanded=True):
+    # Define tabs for better organization
+    tab1, tab2, tab3, tab4 = st.tabs(["Data Cleaning & Descriptive Stats", "One Variable Analysis", "Two Variable Analysis", "Three Variable Analysis"])
+
+    with tab1:
+        # Section 1: Data Cleaning
+        st.header("1. Data Cleaning")
         st.subheader("Handle Missing Values")
         missing_option = st.radio("Choose a method to handle missing values:", ("Impute with Mean", "Remove Rows with Missing Data", "Leave as is"))
         if missing_option == "Impute with Mean":
@@ -74,16 +78,17 @@ if uploaded_file:
         st.write("Data Cleaning Complete.")
         st.write(df.head())
 
-    # Section 2: Descriptive Statistics
-    with st.expander("2. Descriptive Statistics", expanded=True):
+        # Section 2: Descriptive Statistics
+        st.header("2. Descriptive Statistics")
         st.subheader("Central Tendency & Dispersion")
         st.write(df.describe(include='all'))
 
         if st.checkbox("Show Mode"):
             st.write(df.mode().iloc[0])
     
-    # Dynamic visualization options based on data
-    with st.expander("One Variable Analysis", expanded=True):
+    with tab2:
+        # Dynamic visualization options for One Variable Analysis
+        st.header("One Variable Analysis")
         st.subheader("Visualizing Amounts (One Variable)")
 
         # Bar Chart for categorical vs numerical
@@ -113,7 +118,9 @@ if uploaded_file:
             ax.set_title(f"Boxplot of {box_num}")
             st.pyplot(fig)
 
-    with st.expander("Two Variable Analysis", expanded=True):
+    with tab3:
+        # Section for Two Variable Analysis
+        st.header("Two Variable Analysis")
         st.subheader("Visualizing Relationships (Two Variables)")
 
         # Scatter Plot for numerical relationships
@@ -134,7 +141,9 @@ if uploaded_file:
             ax.set_title(f"Line Chart of {line_y} over {line_x}")
             st.pyplot(fig)
 
-    with st.expander("Three Variable Analysis", expanded=False):
+    with tab4:
+        # Section for Three Variable Analysis
+        st.header("Three Variable Analysis")
         st.subheader("3D Scatter Plot (Three Variables)")
 
         # 3D Scatter Plot for three numerical variables

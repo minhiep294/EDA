@@ -53,7 +53,9 @@ if uploaded_file:
         st.subheader("Handle Missing Values")
         missing_option = st.radio("Choose a method to handle missing values:", ("Impute with Mean", "Remove Rows with Missing Data", "Leave as is"))
         if missing_option == "Impute with Mean":
-            df.fillna(df.mean(), inplace=True)
+            # Only fill missing values for numeric columns
+            numeric_cols = df.select_dtypes(include='number').columns
+            df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
         elif missing_option == "Remove Rows with Missing Data":
             df.dropna(inplace=True)
         

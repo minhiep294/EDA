@@ -44,21 +44,29 @@ if uploaded_file:
     st.write("Data Preview:")
     st.dataframe(df.head())
 
-    # Define tabs for better organization
-    tab1, tab2, tab3, tab4 = st.tabs(["Data Cleaning & Descriptive Stats", "One Variable Analysis", "Two Variable Analysis", "Three Variable Analysis"])
+    # Identify numerical and categorical columns
+    num_list = []
+    cat_list = []
+    for column in df:
+        if pd.api.types.is_numeric_dtype(df[column]):
+            num_list.append(column)
+        elif pd.api.types.is_string_dtype(df[column]):
+            cat_list.append(column)
+    st.write("Numerical Columns:", num_list)
+    st.write("Categorical Columns:", cat_list)
+
+    # Define tabs for different analysis types
+    tab1, tab2, tab3, tab4 = st.tabs(["Data Cleaning & Descriptive Stats", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"])
 
     with tab1:
-        # Section 1: Data Cleaning
+        # Data Cleaning
         st.header("1. Data Cleaning")
         st.subheader("Handle Missing Values")
-        missing_option = st.radio("Choose a method to handle missing values:", ("Impute with Mean", "Remove Rows with Missing Data", "Leave as is"))
-        if missing_option == "Impute with Mean":
-            # Only fill missing values for numeric columns
-            numeric_cols = df.select_dtypes(include='number').columns
-            df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
-        elif missing_option == "Remove Rows with Missing Data":
+        if st.button("Remove Rows with Missing Data"):
             df.dropna(inplace=True)
+            st.write("Rows with missing values removed.")
         
+        # Remove Duplicates
         st.subheader("Remove Duplicates")
         if st.button("Remove Duplicate Rows"):
             before = df.shape[0]
@@ -66,6 +74,7 @@ if uploaded_file:
             after = df.shape[0]
             st.write(f"Removed {before - after} duplicate rows")
 
+        # Correct Data Types
         st.subheader("Correct Data Types")
         for col in df.columns:
             col_type = st.selectbox(f"Select data type for {col}", ("Automatic", "Integer", "Float", "String", "DateTime"), index=0)
@@ -80,87 +89,119 @@ if uploaded_file:
         st.write("Data Cleaning Complete.")
         st.write(df.head())
 
-        # Section 2: Descriptive Statistics
+        # Descriptive Statistics
         st.header("2. Descriptive Statistics")
-        st.subheader("Central Tendency & Dispersion")
         st.write(df.describe(include='all'))
-
         if st.checkbox("Show Mode"):
             st.write(df.mode().iloc[0])
     
     with tab2:
-        # Dynamic visualization options for One Variable Analysis
-        st.header("One Variable Analysis")
-        st.subheader("Visualizing Amounts (One Variable)")
+        # Univariate Analysis
+        st.header("Univariate Analysis")
 
-        # Bar Chart for categorical vs numerical
-        bar_cat = st.selectbox("Select categorical variable for bar chart:", df.select_dtypes(include='object').columns, key="bar_cat")
-        bar_num = st.selectbox("Select numerical variable for bar chart:", df.select_dtypes(include='number').columns, key="bar_num")
-        if bar_cat and bar_num:
-            fig, ax = plt.subplots()
-            sns.barplot(x=bar_cat, y=bar_num, data=df, ax=ax)
-            ax.set_title(f"Bar Chart of {bar_num} by {bar_cat}")
+        # Numerical Data Visualization
+        st.subheader("Numerical Data Visualization")
+        num_col = st.selectbox("Select a numerical variable:", num_list)
+        if num_col:
+            fig, ax = plt.subplots(1, 3, figsize=(18, 5))
+
+            # Histogram
+            sns.histplot(df[num_col], kde=True, ax=ax[0])
+            ax[0].set_title(f"Histogram of {num_col}")
+
+            # Box Plot
+            sns.boxplot(x=df[num_col], ax=ax[1])
+            ax[1].set_title(f"Box Plot of {num_col}")
+
+            # Density Plot
+            sns.kdeplot(df[num_col], fill=True, ax=ax[2])
+            ax[2].set_title(f"Density Plot of {num_col}")
+
             st.pyplot(fig)
 
-        # Histogram for numerical distributions
-        st.write("### Histogram")
-        hist_col = st.selectbox("Select numerical variable for histogram:", df.select_dtypes(include='number').columns, key="hist_col")
-        if hist_col:
-            fig, ax = plt.subplots()
-            sns.histplot(df[hist_col], kde=True, ax=ax)
-            ax.set_title(f"Histogram of {hist_col}")
-            st.pyplot(fig)
+        # Categorical Data Visualization
+        st.subheader("Categorical Data Visualization")
+        cat_col = st.selectbox("Select a categorical variable:", cat_list)
+        if cat_col:
+            fig, ax = plt.subplots(1, 3, figsize=(18, 5))
 
-        # Boxplot
-        st.write("### Boxplot")
-        box_num = st.selectbox("Select numerical variable for boxplot:", df.select_dtypes(include='number').columns, key="box_num")
-        if box_num:
-            fig, ax = plt.subplots()
-            sns.boxplot(y=box_num, data=df, ax=ax)
-            ax.set_title(f"Boxplot of {box_num}")
-            st.pyplot(fig)
+            # Count Plot
+            sns.countplot(x=df[cat_col], ax=ax[0])
+            ax[0].set_title(f"Count Plot of {cat_col}")
 
+            # Bar Chart
+            sns.barplot(x=df[cat_col].value_counts().index, y=df[cat_col].value_counts().values, ax=ax[1])
+            ax[1].set_title(f"Bar Chart of {cat_col}")
+
+            # Pie Plot
+            df[cat_col].value_counts().plot.pie(ax=ax[2], autopct='%1.1f%%', startangle=90)
+            ax[2].set_ylabel('')
+            ax[2].set_title(f"Pie Plot of {cat_col}")
+
+            st.pyplot(fig)
+    
     with tab3:
-        # Section for Two Variable Analysis
-        st.header("Two Variable Analysis")
-        st.subheader("Visualizing Relationships (Two Variables)")
+        # Bivariate Analysis
+        st.header("Bivariate Analysis")
 
-        # Scatter Plot for numerical relationships
-        scatter_x = st.selectbox("Select X-axis variable:", df.select_dtypes(include='number').columns, key="scatter_x")
-        scatter_y = st.selectbox("Select Y-axis variable:", df.select_dtypes(include='number').columns, key="scatter_y")
-        if scatter_x and scatter_y:
+        # Numerical vs. Numerical
+        st.subheader("Numerical vs. Numerical")
+        num_x = st.selectbox("Select X-axis numerical variable:", num_list, key="biv_num_x")
+        num_y = st.selectbox("Select Y-axis numerical variable:", num_list, key="biv_num_y")
+        if num_x and num_y:
             fig, ax = plt.subplots()
-            sns.scatterplot(x=scatter_x, y=scatter_y, data=df, ax=ax)
-            ax.set_title(f"Scatter Plot of {scatter_x} vs {scatter_y}")
+            sns.scatterplot(x=df[num_x], y=df[num_y], ax=ax)
+            ax.set_title(f"Scatter Plot of {num_x} vs {num_y}")
             st.pyplot(fig)
 
-        # Line Chart for time series
-        line_x = st.selectbox("Select variable for X-axis (time/index):", df.columns, key="line_x")
-        line_y = st.selectbox("Select variable for Y-axis:", df.select_dtypes(include='number').columns, key="line_y")
-        if line_x and line_y:
+            # Correlation
+            corr = df[num_x].corr(df[num_y])
+            st.write(f"Correlation between {num_x} and {num_y}: {corr:.2f}")
+
+        # Categorical vs. Numerical
+        st.subheader("Categorical vs. Numerical")
+        cat_col = st.selectbox("Select a categorical variable:", cat_list, key="biv_cat")
+        num_col = st.selectbox("Select a numerical variable:", num_list, key="biv_num")
+        if cat_col and num_col:
             fig, ax = plt.subplots()
-            sns.lineplot(x=line_x, y=line_y, data=df, ax=ax)
-            ax.set_title(f"Line Chart of {line_y} over {line_x}")
+            sns.barplot(x=cat_col, y=num_col, data=df, ax=ax)
+            ax.set_title(f"Bar Plot of {num_col} by {cat_col}")
             st.pyplot(fig)
 
+        # Categorical vs. Categorical
+        st.subheader("Categorical vs. Categorical")
+        cat_x = st.selectbox("Select X-axis categorical variable:", cat_list, key="biv_cat_x")
+        cat_y = st.selectbox("Select Y-axis categorical variable:", cat_list, key="biv_cat_y")
+        if cat_x and cat_y:
+            fig, ax = plt.subplots()
+            sns.countplot(x=cat_x, hue=cat_y, data=df, ax=ax)
+            ax.set_title(f"Stacked Bar Chart of {cat_x} by {cat_y}")
+            st.pyplot(fig)
+    
     with tab4:
-        # Section for Three Variable Analysis
-        st.header("Three Variable Analysis")
-        st.subheader("3D Scatter Plot (Three Variables)")
+        # Multivariate Analysis
+        st.header("Multivariate Analysis")
 
-        # 3D Scatter Plot for three numerical variables
-        scatter_3d_x = st.selectbox("Select X-axis variable:", df.select_dtypes(include='number').columns, key="scatter_3d_x")
-        scatter_3d_y = st.selectbox("Select Y-axis variable:", df.select_dtypes(include='number').columns, key="scatter_3d_y")
-        scatter_3d_z = st.selectbox("Select Z-axis variable:", df.select_dtypes(include='number').columns, key="scatter_3d_z")
-        if scatter_3d_x and scatter_3d_y and scatter_3d_z:
-            fig = plt.figure()
-            ax = fig.add_subplot(111, projection='3d')
-            ax.scatter(df[scatter_3d_x], df[scatter_3d_y], df[scatter_3d_z])
-            ax.set_xlabel(scatter_3d_x)
-            ax.set_ylabel(scatter_3d_y)
-            ax.set_zlabel(scatter_3d_z)
-            ax.set_title(f"3D Scatter Plot of {scatter_3d_x}, {scatter_3d_y}, and {scatter_3d_z}")
+        # Numerical vs. Numerical
+        st.subheader("Correlation Matrix for Numerical Variables")
+        if num_list:
+            corr_matrix = df[num_list].corr()
+            fig, ax = plt.subplots()
+            sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
+            ax.set_title("Correlation Matrix")
             st.pyplot(fig)
 
+        # Pair Plot
+        st.subheader("Pair Plot for Numerical Variables")
+        if num_list:
+            sns.pairplot(df[num_list])
+            st.pyplot()
+
+        # Numerical vs. Categorical
+        st.subheader("Numerical vs. Categorical with Pair Plot")
+        if num_list and cat_list:
+            hue_cat = st.selectbox("Select a categorical variable for hue:", cat_list)
+            sns.pairplot(df, vars=num_list, hue=hue_cat)
+            st.pyplot()
 else:
     st.write("Please upload a dataset to begin.")

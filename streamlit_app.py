@@ -4,34 +4,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-# Helper function to display visualization guidance in the sidebar
-def display_visualization_guide():
-    st.sidebar.header("Directory of Visualizations")
-    st.sidebar.markdown("""
-    ### 5.1 Amounts
-    - **Bar Chart**: Shows values across categories. Can be grouped or stacked.
-    - **Dot Plot**: Alternative to bar charts, showing points at end values.
-    
-    ### 5.2 Distributions
-    - **Histogram**: Basic distribution of a numerical variable.
-    - **Density Plot**: Smoothed curve of data distribution.
-    - **Boxplot**: Summarizes distribution with quartiles and outliers.
-    - **Violin Plot**: Combination of boxplot and density plot.
-    
-    ### 5.3 Proportions
-    - **Pie Chart**: Displays parts of a whole.
-    - **Stacked Bar Chart**: Shows proportions across multiple categories.
-    
-    ### 5.4 X–Y Relationships
-    - **Scatter Plot**: Shows relationship between two numerical variables.
-    - **Line Chart**: Displays trends over time or other ordered data.
-    - **Bubble Chart**: Adds a third variable as dot size in scatter plot.
-    
-    ### 5.5 Uncertainty
-    - **Confidence Interval Plot**: Shows range of likely values.
-    - **Error Bars**: Represents uncertainty in measurements.
-    """)
-
 # Initialize the app and sidebar
 st.title("EDA with Streamlit")
 st.write("Upload a dataset to explore its variables with various charts.")

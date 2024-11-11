@@ -59,14 +59,17 @@ if uploaded_file:
     tab1, tab2, tab3, tab4 = st.tabs(["Data Cleaning & Descriptive Stats", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"])
 
     with tab1:
-        # Data Cleaning
+        # Section 1: Data Cleaning
         st.header("1. Data Cleaning")
         st.subheader("Handle Missing Values")
-        if st.button("Remove Rows with Missing Data"):
+        missing_option = st.radio("Choose a method to handle missing values:", ("Impute with Mean", "Remove Rows with Missing Data", "Leave as is"))
+        if missing_option == "Impute with Mean":
+            # Only fill missing values for numeric columns
+            numeric_cols = df.select_dtypes(include='number').columns
+            df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
+        elif missing_option == "Remove Rows with Missing Data":
             df.dropna(inplace=True)
-            st.write("Rows with missing values removed.")
         
-        # Remove Duplicates
         st.subheader("Remove Duplicates")
         if st.button("Remove Duplicate Rows"):
             before = df.shape[0]
@@ -74,7 +77,6 @@ if uploaded_file:
             after = df.shape[0]
             st.write(f"Removed {before - after} duplicate rows")
 
-        # Correct Data Types
         st.subheader("Correct Data Types")
         for col in df.columns:
             col_type = st.selectbox(f"Select data type for {col}", ("Automatic", "Integer", "Float", "String", "DateTime"), index=0)
@@ -89,12 +91,14 @@ if uploaded_file:
         st.write("Data Cleaning Complete.")
         st.write(df.head())
 
-        # Descriptive Statistics
+        # Section 2: Descriptive Statistics
         st.header("2. Descriptive Statistics")
+        st.subheader("Central Tendency & Dispersion")
         st.write(df.describe(include='all'))
+
         if st.checkbox("Show Mode"):
             st.write(df.mode().iloc[0])
-    
+            
     with tab2:
         # Univariate Analysis
         st.header("Univariate Analysis")

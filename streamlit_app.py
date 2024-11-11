@@ -33,7 +33,7 @@ def display_visualization_guide():
     """)
 
 # Initialize the app and sidebar
-st.title("Enhanced EDA with Streamlit")
+st.title("EDA with Streamlit")
 st.write("Upload a dataset to explore its variables with various charts.")
 display_visualization_guide()
 
@@ -44,6 +44,44 @@ if uploaded_file:
     st.write("Data Preview:")
     st.dataframe(df.head())
 
+    # Section 1: Data Cleaning
+    with st.expander("1. Data Cleaning", expanded=True):
+        st.subheader("Handle Missing Values")
+        missing_option = st.radio("Choose a method to handle missing values:", ("Impute with Mean", "Remove Rows with Missing Data", "Leave as is"))
+        if missing_option == "Impute with Mean":
+            df.fillna(df.mean(), inplace=True)
+        elif missing_option == "Remove Rows with Missing Data":
+            df.dropna(inplace=True)
+        
+        st.subheader("Remove Duplicates")
+        if st.button("Remove Duplicate Rows"):
+            before = df.shape[0]
+            df.drop_duplicates(inplace=True)
+            after = df.shape[0]
+            st.write(f"Removed {before - after} duplicate rows")
+
+        st.subheader("Correct Data Types")
+        for col in df.columns:
+            col_type = st.selectbox(f"Select data type for {col}", ("Automatic", "Integer", "Float", "String", "DateTime"), index=0)
+            if col_type == "Integer":
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype("Int64")
+            elif col_type == "Float":
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+            elif col_type == "String":
+                df[col] = df[col].astype(str)
+            elif col_type == "DateTime":
+                df[col] = pd.to_datetime(df[col], errors='coerce')
+        st.write("Data Cleaning Complete.")
+        st.write(df.head())
+
+    # Section 2: Descriptive Statistics
+    with st.expander("2. Descriptive Statistics", expanded=True):
+        st.subheader("Central Tendency & Dispersion")
+        st.write(df.describe(include='all'))
+
+        if st.checkbox("Show Mode"):
+            st.write(df.mode().iloc[0])
+    
     # Dynamic visualization options based on data
     with st.expander("One Variable Analysis", expanded=True):
         st.subheader("Visualizing Amounts (One Variable)")

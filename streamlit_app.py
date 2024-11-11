@@ -51,18 +51,21 @@ if uploaded_file:
         # Section 1: Data Cleaning
         st.header("1. Data Cleaning")
         st.subheader("Handle Missing Values")
-        missing_option = st.radio("Choose a method to handle missing values:", ("Impute with Mean", "Remove Rows with Missing Data", "Leave as is"))
-        if missing_option == "Impute with Mean":
-            df.fillna(df.mean(), inplace=True)
-        elif missing_option == "Remove Rows with Missing Data":
+        if st.button("Remove Rows with Missing Data"):
+            before = df.shape[0]
             df.dropna(inplace=True)
-        
+            after = df.shape[0]
+            st.write(f"Removed {before - after} rows with missing values")
+            st.write("Data Cleaning Complete.")
+            st.write(df.head())
+
         st.subheader("Remove Duplicates")
         if st.button("Remove Duplicate Rows"):
             before = df.shape[0]
             df.drop_duplicates(inplace=True)
             after = df.shape[0]
             st.write(f"Removed {before - after} duplicate rows")
+            st.write(df.head())
 
         st.subheader("Correct Data Types")
         for col in df.columns:
@@ -75,7 +78,6 @@ if uploaded_file:
                 df[col] = df[col].astype(str)
             elif col_type == "DateTime":
                 df[col] = pd.to_datetime(df[col], errors='coerce')
-        st.write("Data Cleaning Complete.")
         st.write(df.head())
 
         # Section 2: Descriptive Statistics

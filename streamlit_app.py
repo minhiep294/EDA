@@ -102,47 +102,51 @@ if uploaded_file:
     with tab2:
         # Univariate Analysis
         st.header("Univariate Analysis")
-
+    
         # Numerical Data Visualization
         st.subheader("Numerical Data Visualization")
         num_col = st.selectbox("Select a numerical variable:", num_list)
         if num_col:
-            fig, ax = plt.subplots(1, 3, figsize=(18, 5))
-
             # Histogram
-            sns.histplot(df[num_col], kde=True, ax=ax[0])
-            ax[0].set_title(f"Histogram of {num_col}")
-
+            fig, ax = plt.subplots()
+            sns.histplot(df[num_col], kde=True, ax=ax)
+            ax.set_title(f"Histogram of {num_col}")
+            st.pyplot(fig)  # Display histogram on a separate row
+    
             # Box Plot
-            sns.boxplot(x=df[num_col], ax=ax[1])
-            ax[1].set_title(f"Box Plot of {num_col}")
-
+            fig, ax = plt.subplots()
+            sns.boxplot(x=df[num_col], ax=ax)
+            ax.set_title(f"Box Plot of {num_col}")
+            st.pyplot(fig)  # Display box plot on a separate row
+    
             # Density Plot
-            sns.kdeplot(df[num_col], fill=True, ax=ax[2])
-            ax[2].set_title(f"Density Plot of {num_col}")
-
-            st.pyplot(fig)
-
+            fig, ax = plt.subplots()
+            sns.kdeplot(df[num_col], fill=True, ax=ax)
+            ax.set_title(f"Density Plot of {num_col}")
+            st.pyplot(fig)  # Display density plot on a separate row
+    
         # Categorical Data Visualization
         st.subheader("Categorical Data Visualization")
         cat_col = st.selectbox("Select a categorical variable:", cat_list)
         if cat_col:
-            fig, ax = plt.subplots(1, 3, figsize=(18, 5))
-
             # Count Plot
-            sns.countplot(x=df[cat_col], ax=ax[0])
-            ax[0].set_title(f"Count Plot of {cat_col}")
-
+            fig, ax = plt.subplots()
+            sns.countplot(x=df[cat_col], ax=ax)
+            ax.set_title(f"Count Plot of {cat_col}")
+            st.pyplot(fig)  # Display count plot on a separate row
+    
             # Bar Chart
-            sns.barplot(x=df[cat_col].value_counts().index, y=df[cat_col].value_counts().values, ax=ax[1])
-            ax[1].set_title(f"Bar Chart of {cat_col}")
-
+            fig, ax = plt.subplots()
+            sns.barplot(x=df[cat_col].value_counts().index, y=df[cat_col].value_counts().values, ax=ax)
+            ax.set_title(f"Bar Chart of {cat_col}")
+            st.pyplot(fig)  # Display bar chart on a separate row
+    
             # Pie Plot
-            df[cat_col].value_counts().plot.pie(ax=ax[2], autopct='%1.1f%%', startangle=90)
-            ax[2].set_ylabel('')
-            ax[2].set_title(f"Pie Plot of {cat_col}")
-
-            st.pyplot(fig)
+            fig, ax = plt.subplots()
+            df[cat_col].value_counts().plot.pie(ax=ax, autopct='%1.1f%%', startangle=90)
+            ax.set_ylabel('')
+            ax.set_title(f"Pie Plot of {cat_col}")
+            st.pyplot(fig)  # Display pie plot on a separate row
     
     with tab3:
         # Bivariate Analysis

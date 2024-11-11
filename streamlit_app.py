@@ -123,64 +123,130 @@ if uploaded_file:
         # Bivariate Analysis
         st.header("Bivariate Analysis")
 
-        # Numerical vs. Numerical
+        # 1. Numerical vs. Numerical
         st.subheader("Numerical vs. Numerical")
-        num_x = st.selectbox("Select X-axis numerical variable:", num_list, key="biv_num_x")
-        num_y = st.selectbox("Select Y-axis numerical variable:", num_list, key="biv_num_y")
-        if num_x and num_y:
+        
+        # Pair Plot
+        st.write("### Pair Plot")
+        if len(df.select_dtypes(include='number').columns) > 1:
+            sns.pairplot(df[num_list])
+            st.pyplot()
+        
+        # Scatter Plot with optional color and size
+        st.write("### Scatter Plot")
+        scatter_x = st.selectbox("Select X-axis variable:", num_list, key="scatter_x")
+        scatter_y = st.selectbox("Select Y-axis variable:", num_list, key="scatter_y")
+        scatter_color = st.selectbox("Select a categorical variable for color (optional):", [None] + cat_list, key="scatter_color")
+        scatter_size = st.selectbox("Select numerical variable for size (optional):", [None] + num_list, key="scatter_size")
+        
+        if scatter_x and scatter_y:
             fig, ax = plt.subplots()
-            sns.scatterplot(x=df[num_x], y=df[num_y], ax=ax)
-            ax.set_title(f"Scatter Plot of {num_x} vs {num_y}")
+            sns.scatterplot(x=df[scatter_x], y=df[scatter_y], hue=df[scatter_color] if scatter_color else None, 
+                            size=df[scatter_size] if scatter_size else None, data=df, ax=ax)
+            ax.set_title(f"Scatter Plot of {scatter_x} vs {scatter_y}")
             st.pyplot(fig)
-
-            # Correlation
-            corr = df[num_x].corr(df[num_y])
-            st.write(f"Correlation between {num_x} and {num_y}: {corr:.2f}")
-
-        # Categorical vs. Numerical
+        
+        # Correlation Coefficient
+        st.write("### Correlation Coefficient")
+        num_x_corr = st.selectbox("Select first numerical variable:", num_list, key="num_x_corr")
+        num_y_corr = st.selectbox("Select second numerical variable:", num_list, key="num_y_corr")
+        
+        if num_x_corr and num_y_corr:
+            corr_value = df[num_x_corr].corr(df[num_y_corr])
+            st.write(f"Correlation between {num_x_corr} and {num_y_corr}: {corr_value:.2f}")
+        
+        # 2. Categorical vs. Numerical
         st.subheader("Categorical vs. Numerical")
-        cat_col = st.selectbox("Select a categorical variable:", cat_list, key="biv_cat")
-        num_col = st.selectbox("Select a numerical variable:", num_list, key="biv_num")
-        if cat_col and num_col:
+        
+        # Bar Plot
+        cat_for_bar = st.selectbox("Select a categorical variable for bar plot:", cat_list, key="cat_for_bar")
+        num_for_bar = st.selectbox("Select a numerical variable for bar plot:", num_list, key="num_for_bar")
+        
+        if cat_for_bar and num_for_bar:
             fig, ax = plt.subplots()
-            sns.barplot(x=cat_col, y=num_col, data=df, ax=ax)
-            ax.set_title(f"Bar Plot of {num_col} by {cat_col}")
+            sns.barplot(x=cat_for_bar, y=num_for_bar, data=df, ax=ax)
+            ax.set_title(f"Bar Plot of {num_for_bar} by {cat_for_bar}")
             st.pyplot(fig)
-
-        # Categorical vs. Categorical
+        
+        # Line Chart
+        st.write("### Line Chart")
+        line_x = st.selectbox("Select variable for X-axis (usually time or index):", [None] + list(df.columns), key="line_x")
+        line_y1 = st.selectbox("Select first numerical variable for line chart:", num_list, key="line_y1")
+        line_y2 = st.selectbox("Select second numerical variable (optional):", [None] + num_list, key="line_y2")
+        
+        if line_x and line_y1:
+            fig, ax = plt.subplots()
+            sns.lineplot(x=df[line_x], y=df[line_y1], ax=ax, label=line_y1)
+            if line_y2:
+                sns.lineplot(x=df[line_x], y=df[line_y2], ax=ax, label=line_y2)
+            ax.set_title(f"Line Chart of {line_y1}" + (f" and {line_y2}" if line_y2 else "") + f" over {line_x}")
+            st.pyplot(fig)
+        
+        # 3. Categorical vs. Categorical (if the output variable is a classifier)
         st.subheader("Categorical vs. Categorical")
-        cat_x = st.selectbox("Select X-axis categorical variable:", cat_list, key="biv_cat_x")
-        cat_y = st.selectbox("Select Y-axis categorical variable:", cat_list, key="biv_cat_y")
-        if cat_x and cat_y:
+        
+        # Stacked Bar Chart
+        stack_cat1 = st.selectbox("Select first categorical variable for stacked bar chart:", cat_list, key="stack_cat1")
+        stack_cat2 = st.selectbox("Select second categorical variable:", cat_list, key="stack_cat2")
+        
+        if stack_cat1 and stack_cat2:
+            stacked_data = df.groupby([stack_cat1, stack_cat2]).size().unstack(fill_value=0)
             fig, ax = plt.subplots()
-            sns.countplot(x=cat_x, hue=cat_y, data=df, ax=ax)
-            ax.set_title(f"Stacked Bar Chart of {cat_x} by {cat_y}")
+            stacked_data.plot(kind="bar", stacked=True, ax=ax)
+            ax.set_title(f"Stacked Bar Chart of {stack_cat1} by {stack_cat2}")
             st.pyplot(fig)
-    
     with tab4:
         # Multivariate Analysis
         st.header("Multivariate Analysis")
 
-        # Numerical vs. Numerical
-        st.subheader("Correlation Matrix for Numerical Variables")
-        if num_list:
+        # 1. Numerical vs. Numerical
+        st.subheader("Numerical vs. Numerical")
+        
+        # Correlation Matrix
+        st.write("### Correlation Matrix")
+        if len(num_list) > 1:
             corr_matrix = df[num_list].corr()
             fig, ax = plt.subplots()
             sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
-            ax.set_title("Correlation Matrix")
+            ax.set_title("Correlation Matrix for Numerical Variables")
             st.pyplot(fig)
-
+        
         # Pair Plot
-        st.subheader("Pair Plot for Numerical Variables")
-        if num_list:
+        st.write("### Pair Plot for Numerical Variables")
+        if len(num_list) > 1:
             sns.pairplot(df[num_list])
             st.pyplot()
-
-        # Numerical vs. Categorical
-        st.subheader("Numerical vs. Categorical with Pair Plot")
-        if num_list and cat_list:
-            hue_cat = st.selectbox("Select a categorical variable for hue:", cat_list)
+        
+        # 2. Categorical vs. Categorical
+        st.subheader("Categorical vs. Categorical")
+        
+        # Grouped Bar Chart
+        cat_x = st.selectbox("Select X-axis categorical variable for grouped bar chart:", cat_list, key="cat_x_grouped")
+        cat_hue = st.selectbox("Select categorical variable for grouping (hue):", cat_list, key="cat_hue_grouped")
+        
+        if cat_x and cat_hue:
+            fig, ax = plt.subplots()
+            sns.countplot(x=cat_x, hue=cat_hue, data=df, ax=ax)
+            ax.set_title(f"Grouped Bar Chart of {cat_x} grouped by {cat_hue}")
+            st.pyplot(fig)
+        
+        # 3. Numerical vs. Categorical
+        st.subheader("Numerical vs. Categorical")
+        
+        # Pair Plot with Hue
+        st.write("### Pair Plot with Hue for Numerical and Categorical Variables")
+        hue_cat = st.selectbox("Select a categorical variable for hue:", cat_list, key="hue_cat_for_pairplot")
+        if hue_cat:
             sns.pairplot(df, vars=num_list, hue=hue_cat)
             st.pyplot()
-else:
-    st.write("Please upload a dataset to begin.")
+        
+        # Box Plot for Numerical vs. Categorical
+        st.write("### Box Plot for Numerical and Categorical Variables")
+        num_for_box = st.selectbox("Select a numerical variable for box plot:", num_list, key="num_for_box")
+        cat_for_box = st.selectbox("Select a categorical variable for grouping in box plot:", cat_list, key="cat_for_box")
+        
+        if num_for_box and cat_for_box:
+            fig, ax = plt.subplots()
+            sns.boxplot(x=cat_for_box, y=num_for_box, data=df, ax=ax)
+            ax.set_title(f"Box Plot of {num_for_box} grouped by {cat_for_box}")
+            st.pyplot(fig)

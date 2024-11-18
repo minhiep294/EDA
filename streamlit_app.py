@@ -56,7 +56,6 @@ def data_cleaning_and_descriptive(df):
 
     # Section 2: Descriptive Statistics
     st.header("2. Descriptive Statistics")
-    st.subheader("Central Tendency and Dispersion")
     st.write(df.describe(include="all"))
 
 # Dynamic Filter Function

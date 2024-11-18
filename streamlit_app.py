@@ -59,18 +59,6 @@ def data_cleaning_and_descriptive(df):
     st.subheader("Central Tendency and Dispersion")
     st.write(df.describe(include="all"))
 
-    # Section 3: Correlation (Optional)
-    st.subheader("Correlation Analysis")
-    num_cols = df.select_dtypes(include=["number"]).columns
-    if len(num_cols) > 1:
-        st.write("Correlation Matrix:")
-        fig, ax = plt.subplots()
-        sns.heatmap(df[num_cols].corr(), annot=True, cmap="coolwarm", ax=ax)
-        st.pyplot(fig)
-    else:
-        st.write("Not enough numerical columns to compute a correlation matrix.")
-
-
 # Dynamic Filter Function
 def filter_data(df):
     st.sidebar.title("Filter Data")

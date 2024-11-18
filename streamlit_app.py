@@ -223,7 +223,7 @@ def multivariate_analysis(df, num_list, cat_list):
         st.pyplot(fig)
 
 # Main App
-st.title("Interactive EDA Application with Dynamic Filtering")
+st.title("Interactive EDA Application")
 uploaded_file = st.file_uploader("Upload your dataset (CSV only):")
 if uploaded_file:
     df = pd.read_csv(uploaded_file)

@@ -4,6 +4,73 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
 
+# Section: Data Cleaning and Descriptive Statistics
+def data_cleaning_and_descriptive(df):
+    # Section 1: Data Cleaning
+    st.header("1. Data Cleaning")
+
+    # Handle Missing Values
+    st.subheader("Handle Missing Values")
+    missing_option = st.radio("Choose a method to handle missing values:", 
+                               ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data"))
+    if missing_option == "Impute with Mean (Numerical Only)":
+        # Impute missing values with mean for numeric columns
+        numeric_cols = df.select_dtypes(include="number").columns
+        df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
+        st.write("Missing values in numerical columns were imputed with the mean.")
+    elif missing_option == "Remove Rows with Missing Data":
+        before = df.shape[0]
+        df.dropna(inplace=True)
+        after = df.shape[0]
+        st.write(f"Removed {before - after} rows containing missing data.")
+
+    # Remove Duplicates
+    st.subheader("Remove Duplicates")
+    if st.button("Remove Duplicate Rows"):
+        before = df.shape[0]
+        df.drop_duplicates(inplace=True)
+        after = df.shape[0]
+        st.write(f"Removed {before - after} duplicate rows.")
+
+    # Correct Data Types
+    st.subheader("Correct Data Types")
+    for col in df.columns:
+        col_type = st.selectbox(
+            f"Select data type for column: {col}",
+            ("Automatic", "Integer", "Float", "String", "DateTime"),
+            index=0,
+        )
+        try:
+            if col_type == "Integer":
+                df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+            elif col_type == "Float":
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+            elif col_type == "String":
+                df[col] = df[col].astype(str)
+            elif col_type == "DateTime":
+                df[col] = pd.to_datetime(df[col], errors="coerce")
+        except Exception as e:
+            st.write(f"Could not convert {col} to {col_type}: {e}")
+    st.write("Data Cleaning Complete.")
+    st.write(df.head())
+
+    # Section 2: Descriptive Statistics
+    st.header("2. Descriptive Statistics")
+    st.subheader("Central Tendency and Dispersion")
+    st.write(df.describe(include="all"))
+
+    # Section 3: Correlation (Optional)
+    st.subheader("Correlation Analysis")
+    num_cols = df.select_dtypes(include=["number"]).columns
+    if len(num_cols) > 1:
+        st.write("Correlation Matrix:")
+        fig, ax = plt.subplots()
+        sns.heatmap(df[num_cols].corr(), annot=True, cmap="coolwarm", ax=ax)
+        st.pyplot(fig)
+    else:
+        st.write("Not enough numerical columns to compute a correlation matrix.")
+
+
 # Dynamic Filter Function
 def filter_data(df):
     st.sidebar.title("Filter Data")
@@ -194,9 +261,14 @@ if uploaded_file:
     cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
 
     st.sidebar.title("Navigation")
-    analysis_type = st.sidebar.radio("Choose Analysis Type:", ["Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"])
-
-    if analysis_type == "Univariate Analysis":
+    analysis_type = st.sidebar.radio(
+        "Choose Analysis Type:",
+        ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"]
+    )
+    
+    if analysis_type == "Data Cleaning & Descriptive":
+        data_cleaning_and_descriptive(df)
+    elif analysis_type == "Univariate Analysis":
         univariate_analysis(filtered_df, num_list, cat_list)
     elif analysis_type == "Bivariate Analysis":
         bivariate_analysis(filtered_df, num_list, cat_list)

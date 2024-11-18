@@ -27,13 +27,13 @@ def filter_data(df):
                     key=f"filter_col_{i}",
                 )
                 if pd.api.types.is_numeric_dtype(df[col_name]):
-                    min_val = df[col_name].min()
-                    max_val = df[col_name].max()
+                    min_val = int(df[col_name].min())  # Convert to integer
+                    max_val = int(df[col_name].max())  # Convert to integer
                     selected_range = st.slider(
                         f"Select range for {col_name}",
-                        min_value=float(min_val),
-                        max_value=float(max_val),
-                        value=(float(min_val), float(max_val)),
+                        min_value=min_val,
+                        max_value=max_val,
+                        value=(min_val, max_val),
                         key=f"filter_slider_{i}",
                     )
                     filters[col_name] = ("range", selected_range)

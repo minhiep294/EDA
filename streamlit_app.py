@@ -4,58 +4,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
 
-# Define Functions
-def dynamic_filter(df):
-    """
-    Provides a dynamic filtering interface for a pandas DataFrame.
-    Filters update dynamically based on user selections.
-
-    Parameters:
-    df (pd.DataFrame): The DataFrame to filter.
-
-    Returns:
-    pd.DataFrame: The filtered DataFrame.
-    """
-    st.sidebar.header("Dynamic Filters")
-    filtered_df = df.copy()
-
-    for col in df.columns:
-        if pd.api.types.is_numeric_dtype(df[col]):
-            min_val, max_val = df[col].min(), df[col].max()
-            step = (max_val - min_val) / 100  # Dynamically determine step size
-            filter_range = st.sidebar.slider(
-                f"Filter {col} (Numeric):",
-                float(min_val), float(max_val),
-                (float(min_val), float(max_val)),
-                step=step
-            )
-            filtered_df = filtered_df[(filtered_df[col] >= filter_range[0]) & (filtered_df[col] <= filter_range[1])]
-
-        elif pd.api.types.is_categorical_dtype(df[col]) or pd.api.types.is_object_dtype(df[col]):
-            unique_values = df[col].dropna().unique()
-            selected_values = st.sidebar.multiselect(
-                f"Filter {col} (Categorical):",
-                unique_values,
-                default=unique_values
-            )
-            if selected_values:
-                filtered_df = filtered_df[filtered_df[col].isin(selected_values)]
-
-        elif pd.api.types.is_datetime64_any_dtype(df[col]):
-            min_date, max_date = df[col].min(), df[col].max()
-            selected_date_range = st.sidebar.date_input(
-                f"Filter {col} (Date):",
-                (min_date, max_date),
-                min_value=min_date, max_value=max_date
-            )
-            if isinstance(selected_date_range, tuple) and len(selected_date_range) == 2:
-                filtered_df = filtered_df[
-                    (filtered_df[col] >= pd.Timestamp(selected_date_range[0])) &
-                    (filtered_df[col] <= pd.Timestamp(selected_date_range[1]))
-                ]
-
-    return filtered_df
-
 def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
@@ -151,11 +99,7 @@ if uploaded_file:
 
     st.sidebar.title("Navigation")
     analysis_type = st.sidebar.radio("Choose Analysis Type:", ["Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Filter Data"])
-    
-    if analysis_type == "Filter Data":
-        df = dynamic_filter(df)
-        st.write("### Filtered Data Preview:")
-        st.dataframe(df.head())
+
 
     if analysis_type == "Univariate Analysis":
         univariate_analysis(df, num_list, cat_list)

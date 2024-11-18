@@ -98,7 +98,7 @@ if uploaded_file:
     cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
 
     st.sidebar.title("Navigation")
-    analysis_type = st.sidebar.radio("Choose Analysis Type:", ["Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Filter Data"])
+    analysis_type = st.sidebar.radio("Choose Analysis Type:", ["Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"])
 
 
     if analysis_type == "Univariate Analysis":

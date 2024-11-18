@@ -4,6 +4,86 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
 
+# Dynamic Filter Function
+def filter_data(df):
+    st.sidebar.title("Filter Data")
+    filters = {}
+    filter_container = st.sidebar.container()
+    with filter_container:
+        # Add new filter dynamically
+        add_filter_button = st.button("Add New Filter")
+        if "filter_count" not in st.session_state:
+            st.session_state.filter_count = 0
+
+        if add_filter_button:
+            st.session_state.filter_count += 1
+
+        # Manage filters dynamically
+        for i in range(st.session_state.filter_count):
+            with st.expander(f"Filter {i+1}", expanded=True):
+                col_name = st.selectbox(
+                    f"Select Column for Filter {i+1}",
+                    df.columns,
+                    key=f"filter_col_{i}",
+                )
+                if pd.api.types.is_numeric_dtype(df[col_name]):
+                    min_val = df[col_name].min()
+                    max_val = df[col_name].max()
+                    selected_range = st.slider(
+                        f"Select range for {col_name}",
+                        min_value=float(min_val),
+                        max_value=float(max_val),
+                        value=(float(min_val), float(max_val)),
+                        key=f"filter_slider_{i}",
+                    )
+                    filters[col_name] = ("range", selected_range)
+                elif pd.api.types.is_string_dtype(df[col_name]):
+                    unique_values = df[col_name].unique().tolist()
+                    selected_values = st.multiselect(
+                        f"Select categories for {col_name}",
+                        options=unique_values,
+                        default=unique_values,
+                        key=f"filter_multiselect_{i}",
+                    )
+                    filters[col_name] = ("categories", selected_values)
+                elif pd.api.types.is_datetime64_any_dtype(df[col_name]):
+                    min_date = df[col_name].min()
+                    max_date = df[col_name].max()
+                    selected_dates = st.date_input(
+                        f"Select date range for {col_name}",
+                        value=(min_date, max_date),
+                        key=f"filter_date_{i}",
+                    )
+                    filters[col_name] = ("dates", selected_dates)
+
+                # Remove filter
+                remove_filter = st.button(f"Remove Filter {i+1}", key=f"remove_filter_{i}")
+                if remove_filter:
+                    del st.session_state[f"filter_col_{i}"]
+                    del st.session_state[f"filter_slider_{i}"]
+                    del st.session_state[f"filter_multiselect_{i}"]
+                    del st.session_state[f"filter_date_{i}"]
+                    st.session_state.filter_count -= 1
+                    break
+
+    # Apply filters to the dataset
+    filtered_df = df.copy()
+    for col, (filter_type, value) in filters.items():
+        if filter_type == "range":
+            filtered_df = filtered_df[
+                (filtered_df[col] >= value[0]) & (filtered_df[col] <= value[1])
+            ]
+        elif filter_type == "categories":
+            filtered_df = filtered_df[filtered_df[col].isin(value)]
+        elif filter_type == "dates":
+            filtered_df = filtered_df[
+                (filtered_df[col] >= pd.to_datetime(value[0]))
+                & (filtered_df[col] <= pd.to_datetime(value[1]))
+            ]
+
+    return filtered_df
+
+# Univariate Analysis
 def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
@@ -35,6 +115,7 @@ def univariate_analysis(df, num_list, cat_list):
         ax.set_title(f"{chart_type} for {col}")
         st.pyplot(fig)
 
+# Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")
     chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient"])
@@ -66,6 +147,7 @@ def bivariate_analysis(df, num_list, cat_list):
         corr = df[x].corr(df[y])
         st.write(f"Correlation between {x} and {y}: {corr:.2f}")
 
+# Multivariate Analysis
 def multivariate_analysis(df, num_list, cat_list):
     st.subheader("Multivariate Analysis")
     chart_type = st.selectbox("Choose chart type:", ["Pair Plot", "Correlation Matrix", "Grouped Bar Chart"])
@@ -86,24 +168,37 @@ def multivariate_analysis(df, num_list, cat_list):
         ax.set_title(f"Grouped Bar Chart: {x} grouped by {hue}")
         st.pyplot(fig)
 
-# App Layout
-st.title("Interactive EDA Application")
+# Main App
+st.title("Interactive EDA Application with Dynamic Filtering")
 uploaded_file = st.file_uploader("Upload your dataset (CSV only):")
 if uploaded_file:
     df = pd.read_csv(uploaded_file)
     st.write("### Dataset Preview:")
     st.dataframe(df.head())
 
-    num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
-    cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
+    # Convert date columns to datetime if detected
+    for col in df.columns:
+        if pd.api.types.is_object_dtype(df[col]):
+            try:
+                df[col] = pd.to_datetime(df[col])
+            except Exception:
+                continue
+
+    # Filter the dataset
+    filtered_df = filter_data(df)
+
+    st.write("### Filtered Dataset:")
+    st.dataframe(filtered_df)
+
+    num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
+    cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
 
     st.sidebar.title("Navigation")
     analysis_type = st.sidebar.radio("Choose Analysis Type:", ["Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"])
 
-
     if analysis_type == "Univariate Analysis":
-        univariate_analysis(df, num_list, cat_list)
+        univariate_analysis(filtered_df, num_list, cat_list)
     elif analysis_type == "Bivariate Analysis":
-        bivariate_analysis(df, num_list, cat_list)
+        bivariate_analysis(filtered_df, num_list, cat_list)
     elif analysis_type == "Multivariate Analysis":
-        multivariate_analysis(df, num_list, cat_list)
+        multivariate_analysis(filtered_df, num_list, cat_list)

@@ -5,23 +5,56 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 # Define Functions
-def filter_data(df):
-    st.sidebar.subheader("Filter Data")
-    filters = []
+def dynamic_filter(df):
+    """
+    Provides a dynamic filtering interface for a pandas DataFrame.
+    Filters update dynamically based on user selections.
+
+    Parameters:
+    df (pd.DataFrame): The DataFrame to filter.
+
+    Returns:
+    pd.DataFrame: The filtered DataFrame.
+    """
+    st.sidebar.header("Dynamic Filters")
+    filtered_df = df.copy()
+
     for col in df.columns:
         if pd.api.types.is_numeric_dtype(df[col]):
-            min_val, max_val = st.sidebar.slider(f"Filter {col}:", float(df[col].min()), float(df[col].max()), (float(df[col].min()), float(df[col].max())))
-            filters.append((col, min_val, max_val))
-        else:
-            selected_values = st.sidebar.multiselect(f"Filter {col}:", df[col].unique())
-            filters.append((col, selected_values))
-    
-    for col, filter_val in filters:
-        if isinstance(filter_val, tuple):  # Numeric filter
-            df = df[(df[col] >= filter_val[0]) & (df[col] <= filter_val[1])]
-        elif isinstance(filter_val, list) and filter_val:  # Categorical filter
-            df = df[df[col].isin(filter_val)]
-    return df
+            min_val, max_val = df[col].min(), df[col].max()
+            step = (max_val - min_val) / 100  # Dynamically determine step size
+            filter_range = st.sidebar.slider(
+                f"Filter {col} (Numeric):",
+                float(min_val), float(max_val),
+                (float(min_val), float(max_val)),
+                step=step
+            )
+            filtered_df = filtered_df[(filtered_df[col] >= filter_range[0]) & (filtered_df[col] <= filter_range[1])]
+
+        elif pd.api.types.is_categorical_dtype(df[col]) or pd.api.types.is_object_dtype(df[col]):
+            unique_values = df[col].dropna().unique()
+            selected_values = st.sidebar.multiselect(
+                f"Filter {col} (Categorical):",
+                unique_values,
+                default=unique_values
+            )
+            if selected_values:
+                filtered_df = filtered_df[filtered_df[col].isin(selected_values)]
+
+        elif pd.api.types.is_datetime64_any_dtype(df[col]):
+            min_date, max_date = df[col].min(), df[col].max()
+            selected_date_range = st.sidebar.date_input(
+                f"Filter {col} (Date):",
+                (min_date, max_date),
+                min_value=min_date, max_value=max_date
+            )
+            if isinstance(selected_date_range, tuple) and len(selected_date_range) == 2:
+                filtered_df = filtered_df[
+                    (filtered_df[col] >= pd.Timestamp(selected_date_range[0])) &
+                    (filtered_df[col] <= pd.Timestamp(selected_date_range[1]))
+                ]
+
+    return filtered_df
 
 def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
@@ -120,7 +153,7 @@ if uploaded_file:
     analysis_type = st.sidebar.radio("Choose Analysis Type:", ["Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Filter Data"])
     
     if analysis_type == "Filter Data":
-        df = filter_data(df)
+        df = dynamic_filter(df)
         st.write("### Filtered Data Preview:")
         st.dataframe(df.head())
 

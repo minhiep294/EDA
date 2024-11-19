@@ -204,19 +204,25 @@ def bivariate_analysis(df, num_list, cat_list):
 #Multivariable Analysis
 def multivariate_analysis(df, num_list, cat_list):
     st.subheader("Multivariate Analysis")
-    chart_type = st.selectbox("Choose chart type:", ["Pair Plot", "Correlation Matrix", "Grouped Bar Chart", "Bubble Chart", "Heat Map"])
     
+    # Allow user to select chart type
+    chart_type = st.selectbox("Choose chart type:", 
+                              ["Pair Plot", "Correlation Matrix", "Grouped Bar Chart", "Bubble Chart", "Heat Map"])
+    
+    # Pair Plot
     if chart_type == "Pair Plot":
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
-        sns.pairplot(df, hue=None if hue == "None" else hue)
+        sns.pairplot(df[num_list], hue=None if hue == "None" else hue)
         st.pyplot()
 
+    # Correlation Matrix
     elif chart_type == "Correlation Matrix":
         fig, ax = plt.subplots()
         sns.heatmap(df[num_list].corr(), annot=True, cmap="coolwarm", ax=ax)
         ax.set_title("Correlation Matrix")
         st.pyplot(fig)
-
+    
+    # Grouped Bar Chart
     elif chart_type == "Grouped Bar Chart":
         x = st.selectbox("Select X-axis Variable (categorical):", cat_list)
         hue = st.selectbox("Select Grouping Variable (categorical):", cat_list)
@@ -225,29 +231,26 @@ def multivariate_analysis(df, num_list, cat_list):
         ax.set_title(f"Grouped Bar Chart: {x} grouped by {hue}")
         st.pyplot(fig)
 
+    # Bubble Chart
     elif chart_type == "Bubble Chart":
         x = st.selectbox("Select X-axis Variable (numerical):", num_list)
         y = st.selectbox("Select Y-axis Variable (numerical):", num_list)
         size = st.selectbox("Select Bubble Size Variable (numerical):", num_list)
-        hue = st.selectbox("Select Hue (categorical):", ["None"] + cat_list)
-        
+        color = st.selectbox("Select Bubble Color Variable (categorical):", ["None"] + cat_list)
         fig, ax = plt.subplots()
-        sns.scatterplot(
-            x=df[x], y=df[y], size=df[size],
-            hue=None if hue == "None" else df[hue], sizes=(20, 200), ax=ax
-        )
+        sns.scatterplot(data=df, x=x, y=y, size=size, hue=None if color == "None" else color, sizes=(20, 200), ax=ax)
         ax.set_title(f"Bubble Chart: {x} vs {y} (Size: {size})")
         st.pyplot(fig)
-
+    
+    # Heat Map
     elif chart_type == "Heat Map":
         x = st.selectbox("Select X-axis Variable (categorical):", cat_list)
         y = st.selectbox("Select Y-axis Variable (categorical):", cat_list)
-        agg = st.selectbox("Select Aggregation Variable (numerical):", num_list)
-        
-        heatmap_data = df.pivot_table(index=y, columns=x, values=agg, aggfunc='mean')
+        value = st.selectbox("Select Value Variable (numerical):", num_list)
+        pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
         fig, ax = plt.subplots()
-        sns.heatmap(heatmap_data, annot=True, cmap="coolwarm", ax=ax)
-        ax.set_title(f"Heat Map: {agg} aggregated by {x} and {y}")
+        sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
+        ax.set_title(f"Heat Map: {value} by {x} and {y}")
         st.pyplot(fig)
 
 # Main App

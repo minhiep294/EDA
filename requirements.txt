@@ -5,3 +5,4 @@ seaborn
 openai
 scipy
 statsmodels
+scikit-learn

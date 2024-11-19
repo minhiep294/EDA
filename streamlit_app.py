@@ -141,6 +141,8 @@ def filter_data(df):
 def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
+    
+    # Numerical Variable Analysis
     if variable_type == "Numerical":
         col = st.selectbox("Select a numerical variable:", num_list)
         chart_type = st.selectbox("Choose chart type:", ["Histogram", "Box Plot", "Density Plot", "QQ Plot"])
@@ -155,9 +157,11 @@ def univariate_analysis(df, num_list, cat_list):
             stats.probplot(df[col], dist="norm", plot=ax)
         ax.set_title(f"{chart_type} for {col}")
         st.pyplot(fig)
+    
+    # Categorical Variable Analysis
     elif variable_type == "Categorical":
         col = st.selectbox("Select a categorical variable:", cat_list)
-        chart_type = st.selectbox("Choose chart type:", ["Count Plot", "Bar Chart", "Pie Chart"])
+        chart_type = st.selectbox("Choose chart type:", ["Count Plot", "Bar Chart", "Pie Chart", "Box Plot"])
         fig, ax = plt.subplots()
         if chart_type == "Count Plot":
             sns.countplot(x=col, data=df, ax=ax)
@@ -166,6 +170,9 @@ def univariate_analysis(df, num_list, cat_list):
         elif chart_type == "Pie Chart":
             df[col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax)
             ax.set_ylabel("")
+        elif chart_type == "Box Plot":
+            num_col = st.selectbox("Select a numerical variable for Box Plot:", num_list)
+            sns.boxplot(x=col, y=num_col, data=df, ax=ax)
         ax.set_title(f"{chart_type} for {col}")
         st.pyplot(fig)
 

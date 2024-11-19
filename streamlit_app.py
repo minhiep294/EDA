@@ -389,7 +389,7 @@ if uploaded_file:
     st.sidebar.title("Navigation")
     analysis_type = st.sidebar.radio(
         "Choose Analysis Type:",
-        ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"]
+        ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Simple Linear Regression"]
     )
     
     if analysis_type == "Data Cleaning & Descriptive":

@@ -211,16 +211,38 @@ def multivariate_analysis(df, num_list, cat_list):
     
     # Pair Plot
     if chart_type == "Pair Plot":
+        # Allow user to select numerical variables for the pair plot
+        selected_vars = st.multiselect(
+            "Select numerical variables to include in the pair plot:",
+            options=num_list,
+            default=num_list  # By default, select all numerical variables
+        )
+        
+        # Optional Hue (categorical variable)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
-        sns.pairplot(df[num_list], hue=None if hue == "None" else hue)
-        st.pyplot()
+        
+        # Generate Pair Plot
+        if not selected_vars:
+            st.warning("Please select at least one variable for the pair plot.")
+        else:
+            pairplot_fig = sns.pairplot(df[selected_vars], hue=None if hue == "None" else hue)
+            st.pyplot(pairplot_fig)
 
     # Correlation Matrix
     elif chart_type == "Correlation Matrix":
-        fig, ax = plt.subplots()
-        sns.heatmap(df[num_list].corr(), annot=True, cmap="coolwarm", ax=ax)
-        ax.set_title("Correlation Matrix")
-        st.pyplot(fig)
+        selected_vars = st.multiselect(
+            "Select numerical variables to include in the correlation matrix:",
+            options=num_list,
+            default=num_list  # By default, select all numerical variables
+        )
+        if not selected_vars:
+            st.warning("Please select at least one variable.")
+        else:
+            fig, ax = plt.subplots(figsize=(10, 8))
+            corr_matrix = df[selected_vars].corr()
+            sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
+            ax.set_title("Correlation Matrix")
+            st.pyplot(fig)
     
     # Grouped Bar Chart
     elif chart_type == "Grouped Bar Chart":
@@ -240,6 +262,17 @@ def multivariate_analysis(df, num_list, cat_list):
         fig, ax = plt.subplots()
         sns.scatterplot(data=df, x=x, y=y, size=size, hue=None if color == "None" else color, sizes=(20, 200), ax=ax)
         ax.set_title(f"Bubble Chart: {x} vs {y} (Size: {size})")
+        st.pyplot(fig)
+    
+    # Heat Map
+    elif chart_type == "Heat Map":
+        x = st.selectbox("Select X-axis Variable (categorical):", cat_list)
+        y = st.selectbox("Select Y-axis Variable (categorical):", cat_list)
+        value = st.selectbox("Select Value Variable (numerical):", num_list)
+        pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
+        fig, ax = plt.subplots()
+        sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
+        ax.set_title(f"Heat Map: {value} by {x} and {y}")
         st.pyplot(fig)
     
     # Heat Map

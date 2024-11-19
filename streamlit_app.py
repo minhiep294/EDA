@@ -1,5 +1,8 @@
 import streamlit as st
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -295,63 +298,54 @@ def multivariate_analysis(df, num_list, cat_list):
         st.pyplot(fig)
 
 # Simple Linear Regression Function
-def simple_linear_regression_no_sklearn(df, num_list):
-    st.subheader("Simple Linear Regression (y = ax + b) Without scikit-learn")
+def simple_linear_regression(df, num_list):
+    st.subheader("Simple Linear Regression (y = ax + b)")
     
     # Step 1: Select Variables
     dependent_var = st.selectbox("Select the dependent variable (y):", num_list)
     independent_var = st.selectbox("Select the independent variable (x):", [col for col in num_list if col != dependent_var])
     
     # Prepare Data
-    X = df[independent_var].values
-    y = df[dependent_var].values
+    X = df[[independent_var]]
+    y = df[dependent_var]
     
-    # Train-Test Split
+    # Step 2: Train-Test Split
     st.subheader("Train-Test Split")
     test_size = st.slider("Test set size (%)", min_value=10, max_value=50, value=20, step=5) / 100
-    split_index = int((1 - test_size) * len(X))
+    from sklearn.model_selection import train_test_split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+    st.write(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
     
-    X_train, X_test = X[:split_index], X[split_index:]
-    y_train, y_test = y[:split_index], y[split_index:]
-    
-    # Reshape for matrix operations
-    X_train = X_train.reshape(-1, 1)
-    X_test = X_test.reshape(-1, 1)
-    
-    # Step 2: Train the Model
-    # Add a column of ones to X_train for the intercept (bias term)
-    X_train_with_intercept = np.hstack((np.ones((X_train.shape[0], 1)), X_train))
-    coefficients = np.linalg.inv(X_train_with_intercept.T @ X_train_with_intercept) @ X_train_with_intercept.T @ y_train
-    
-    intercept = coefficients[0]
-    slope = coefficients[1]
-    st.write(f"Regression Equation: y = {slope:.2f}x + {intercept:.2f}")
-    
-    # Step 3: Predict on Test Data
-    X_test_with_intercept = np.hstack((np.ones((X_test.shape[0], 1)), X_test))
-    y_pred = X_test_with_intercept @ coefficients
+    # Step 3: Train the Model
+    from sklearn.linear_model import LinearRegression
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    st.write("Model trained successfully!")
+    st.write(f"Regression Equation: y = {model.coef_[0]:.2f}x + {model.intercept_:.2f}")
     
     # Step 4: Evaluate the Model
     st.subheader("Model Evaluation")
-    residuals = y_test - y_pred
-    r2 = 1 - (np.sum(residuals**2) / np.sum((y_test - np.mean(y_test))**2))
-    rmse = np.sqrt(np.mean(residuals**2))
+    y_pred = model.predict(X_test)
+    from sklearn.metrics import mean_squared_error, r2_score
+    r2 = r2_score(y_test, y_pred)
+    rmse = mean_squared_error(y_test, y_pred, squared=False)
     st.write(f"R-squared: {r2:.2f}")
     st.write(f"Root Mean Squared Error (RMSE): {rmse:.2f}")
     
-    # Step 5: Visualizations
+    # Step 5: Visualization
     st.subheader("Visualizations")
     
     # Scatter Plot with Regression Line
     fig, ax = plt.subplots()
-    sns.scatterplot(x=X_test.flatten(), y=y_test, ax=ax, label="Actual")
-    sns.lineplot(x=X_test.flatten(), y=y_pred, color="red", ax=ax, label="Regression Line")
+    sns.scatterplot(x=X_test[independent_var], y=y_test, ax=ax, label="Actual")
+    sns.lineplot(x=X_test[independent_var], y=y_pred, color="red", ax=ax, label="Regression Line")
     ax.set_title("Actual vs Predicted")
     ax.set_xlabel(independent_var)
     ax.set_ylabel(dependent_var)
     st.pyplot(fig)
     
     # Residual Plot
+    residuals = y_test - y_pred
     fig, ax = plt.subplots()
     sns.scatterplot(x=y_pred, y=residuals, ax=ax)
     ax.axhline(0, color="red", linestyle="--")
@@ -359,7 +353,6 @@ def simple_linear_regression_no_sklearn(df, num_list):
     ax.set_xlabel("Predicted Values")
     ax.set_ylabel("Residuals")
     st.pyplot(fig)
-
 
 # Main App
 st.title("Interactive EDA Application")

@@ -308,16 +308,19 @@ def simple_linear_regression(df, num_list):
     # Prepare Data
     X = df[[independent_var]]
     y = df[dependent_var]
+
+    # Handle missing or infinite values
+    if X.isnull().any().any() or y.isnull().any() or np.isinf(X).any().any() or np.isinf(y).any():
+        st.error("Input data contains missing or infinite values. Please clean the data before proceeding.")
+        return
     
     # Step 2: Train-Test Split
     st.subheader("Train-Test Split")
     test_size = st.slider("Test set size (%)", min_value=10, max_value=50, value=20, step=5) / 100
-    from sklearn.model_selection import train_test_split
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
     st.write(f"Train size: {len(X_train)}, Test size: {len(X_test)}")
     
     # Step 3: Train the Model
-    from sklearn.linear_model import LinearRegression
     model = LinearRegression()
     model.fit(X_train, y_train)
     st.write("Model trained successfully!")
@@ -326,7 +329,6 @@ def simple_linear_regression(df, num_list):
     # Step 4: Evaluate the Model
     st.subheader("Model Evaluation")
     y_pred = model.predict(X_test)
-    from sklearn.metrics import mean_squared_error, r2_score
     r2 = r2_score(y_test, y_pred)
     rmse = mean_squared_error(y_test, y_pred, squared=False)
     st.write(f"R-squared: {r2:.2f}")

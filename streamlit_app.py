@@ -393,5 +393,5 @@ if uploaded_file:
         bivariate_analysis(filtered_df, num_list, cat_list)
     elif analysis_type == "Multivariate Analysis":
         multivariate_analysis(filtered_df, num_list, cat_list)
-    elif analysis_type == "Regression Analysis":
+    elif analysis_type == "Simple Linear Regression":
         simple_linear_regression(filtered_df, num_list)

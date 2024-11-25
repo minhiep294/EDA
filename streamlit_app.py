@@ -166,22 +166,14 @@ def univariate_analysis(df, num_list, cat_list):
             bins = st.slider("Number of bins:", min_value=5, max_value=50, value=20)
             log_scale = st.checkbox("Log Scale (X-axis)")
             sns.histplot(df[col], bins=bins, kde=True, ax=ax)
-            ax.axvline(mean, color="red", linestyle="--", label="Mean")
-            ax.axvline(median, color="blue", linestyle="-", label="Median")
             if log_scale:
                 ax.set_xscale("log")
-            ax.legend()
             ax.set_title(f"Histogram of {col}")
         elif chart_type == "Box Plot":
             sns.boxplot(x=df[col], ax=ax)
-            ax.axhline(mean, color="red", linestyle="--", label="Mean")
-            ax.legend()
             ax.set_title(f"Box Plot of {col} (Outliers: {num_outliers})")
         elif chart_type == "Density Plot":
             sns.kdeplot(df[col], fill=True, ax=ax)
-            ax.axvline(mean, color="red", linestyle="--", label="Mean")
-            ax.axvline(median, color="blue", linestyle="-", label="Median")
-            ax.legend()
             ax.set_title(f"Density Plot of {col}")
         elif chart_type == "QQ Plot":
             stats.probplot(df[col], dist="norm", plot=ax)
@@ -223,6 +215,7 @@ def univariate_analysis(df, num_list, cat_list):
         
         st.pyplot(fig)
         st.write(f"**Category Counts:**\n{df[col].value_counts()}")
+        
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")

@@ -150,8 +150,15 @@ def univariate_analysis(df, num_list, cat_list):
         fig, ax = plt.subplots()
         if chart_type == "Histogram":
             sns.histplot(df[col], kde=True, ax=ax)
+            ax.axvline(mean, color='red', linestyle='--', label='Mean')
+            ax.axvline(median, color='blue', linestyle='-', label='Median')
+            ax.legend()
+            ax.set_title(f"Histogram of {col} with Mean and Median")
         elif chart_type == "Box Plot":
             sns.boxplot(x=df[col], ax=ax)
+            ax.axhline(mean, color='red', linestyle='--', label='Mean')
+            ax.legend()
+            ax.set_title(f"Box Plot of {col} with Mean")
         elif chart_type == "Density Plot":
             sns.kdeplot(df[col], fill=True, ax=ax)
         elif chart_type == "QQ Plot":

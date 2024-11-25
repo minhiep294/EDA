@@ -143,6 +143,7 @@ def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
     
+    #Numerical
     if variable_type == "Numerical":
         col = st.selectbox("Select a numerical variable:", num_list)
         chart_type = st.selectbox(
@@ -188,6 +189,7 @@ def univariate_analysis(df, num_list, cat_list):
             f"- Outliers (IQR method): {num_outliers}"
         )
 
+    #Categorical
     elif variable_type == "Categorical":
         col = st.selectbox("Select a categorical variable:", cat_list)
         chart_type = st.selectbox(
@@ -220,34 +222,46 @@ def univariate_analysis(df, num_list, cat_list):
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")
     chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient"])
+    
+    sampled_df = df.sample(n=min(len(df), 1000), random_state=42)  # Sample large datasets
+
     if chart_type == "Scatter Plot":
         x = st.selectbox("Select Independent Variable (X, numerical):", num_list)
         y = st.selectbox("Select Dependent Variable (Y, numerical):", num_list)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
+        point_size = st.slider("Select Point Size:", min_value=5, max_value=100, value=20)
+        
         fig, ax = plt.subplots()
-        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=df, ax=ax)
+        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=sampled_df, ax=ax, s=point_size)
         ax.set_title(f"Scatter Plot: {y} vs {x}")
         st.pyplot(fig)
+
     elif chart_type == "Bar Plot":
         x = st.selectbox("Select Independent Variable (categorical):", cat_list)
         y = st.selectbox("Select Dependent Variable (numerical):", num_list)
+        
         fig, ax = plt.subplots()
-        sns.barplot(x=x, y=y, data=df, ax=ax)
+        sns.barplot(x=x, y=y, data=sampled_df, ax=ax)
         ax.set_title(f"Bar Plot: {y} grouped by {x}")
         st.pyplot(fig)
+
     elif chart_type == "Line Chart":
         x = st.selectbox("Select X-axis Variable (numerical or categorical):", df.columns)
         y = st.selectbox("Select Y-axis Variable (numerical):", num_list)
+        
         fig, ax = plt.subplots()
-        sns.lineplot(x=x, y=y, data=df, ax=ax)
+        sns.lineplot(x=x, y=y, data=sampled_df, ax=ax)
         ax.set_title(f"Line Chart: {y} over {x}")
         st.pyplot(fig)
-    elif chart_type == "Correlation Coefficient":
-        x = st.selectbox("Select First Variable (numerical):", num_list)
-        y = st.selectbox("Select Second Variable (numerical):", num_list)
-        corr = df[x].corr(df[y])
-        st.write(f"Correlation between {x} and {y}: {corr:.2f}")
 
+    elif chart_type == "Correlation Coefficient":
+        method = st.radio("Choose Correlation Method:", ["Pearson", "Spearman", "Kendall"])
+        fig, ax = plt.subplots(figsize=(10, 8))
+        corr_matrix = df[num_list].corr(method=method.lower())
+        sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
+        ax.set_title(f"Correlation Matrix ({method} Method)")
+        st.pyplot(fig)
+        
 #Multivariable Analysis
 def multivariate_analysis(df, num_list, cat_list):
     st.subheader("Multivariate Analysis")

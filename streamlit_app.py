@@ -219,7 +219,6 @@ def univariate_analysis(df, num_list, cat_list):
         st.write(f"**Category Counts:**\n{df[col].value_counts()}")
         
 # Bivariate Analysis
-# Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")
     chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient"])
@@ -227,8 +226,11 @@ def bivariate_analysis(df, num_list, cat_list):
         x = st.selectbox("Select Independent Variable (X, numerical):", num_list)
         y = st.selectbox("Select Dependent Variable (Y, numerical):", num_list)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
+        sample_size = st.slider("Sample Size:", min_value=100, max_value=min(1000, len(df)), value=500)
+        
+        sampled_df = df.sample(n=sample_size, random_state=42)
         fig, ax = plt.subplots()
-        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=df, ax=ax)
+        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=sampled_df, ax=ax)
         ax.set_title(f"Scatter Plot: {y} vs {x}")
         st.pyplot(fig)
     elif chart_type == "Bar Plot":
@@ -246,10 +248,28 @@ def bivariate_analysis(df, num_list, cat_list):
         ax.set_title(f"Line Chart: {y} over {x}")
         st.pyplot(fig)
     elif chart_type == "Correlation Coefficient":
-        x = st.selectbox("Select First Variable (numerical):", num_list)
-        y = st.selectbox("Select Second Variable (numerical):", num_list)
-        corr = df[x].corr(df[y])
-        st.write(f"Correlation between {x} and {y}: {corr:.2f}")
+        # Select numerical variables for the correlation matrix
+        selected_vars = st.multiselect(
+            "Select Variables for Correlation Analysis (default: all numerical):",
+            num_list,
+            default=num_list
+        )
+        # Ensure at least two variables are selected
+        if len(selected_vars) < 2:
+            st.warning("Please select at least two variables for correlation analysis.")
+        else:
+            advanced = st.checkbox("Advanced Options (Choose Correlation Method)")
+            if advanced:
+                corr_method = st.radio("Choose Correlation Method:", ["Pearson", "Spearman", "Kendall"])
+            else:
+                corr_method = "Pearson"  # Default method
+    
+            # Generate and display correlation matrix
+            fig, ax = plt.subplots(figsize=(10, 8))
+            corr_matrix = df[selected_vars].corr(method=corr_method.lower())
+            sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
+            ax.set_title(f"Correlation Matrix ({corr_method} Method)")
+            st.pyplot(fig)
         
 #Multivariable Analysis
 def multivariate_analysis(df, num_list, cat_list):

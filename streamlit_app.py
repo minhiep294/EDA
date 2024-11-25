@@ -281,21 +281,21 @@ def multivariate_analysis(df, num_list, cat_list):
     
     # Pair Plot
     if chart_type == "Pair Plot":
-        # Allow user to select numerical variables for the pair plot
+        sampled_df = df.sample(n=min(len(df), 1000), random_state=42)  # Sample large datasets
         selected_vars = st.multiselect(
             "Select numerical variables to include in the pair plot:",
             options=num_list,
-            default=num_list  # By default, select all numerical variables
+            default=num_list[:4]  # Limit the default to first 4 numerical variables
         )
-        
-        # Optional Hue (categorical variable)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
-        
-        # Generate Pair Plot
         if not selected_vars:
             st.warning("Please select at least one variable for the pair plot.")
         else:
-            pairplot_fig = sns.pairplot(df[selected_vars], hue=None if hue == "None" else hue)
+            pairplot_fig = sns.pairplot(
+                sampled_df[selected_vars],
+                hue=None if hue == "None" else hue,
+                diag_kind="kde"  # Adds smoother plots on diagonals
+            )
             st.pyplot(pairplot_fig)
 
     # Correlation Matrix
@@ -325,12 +325,17 @@ def multivariate_analysis(df, num_list, cat_list):
 
     # Bubble Chart
     elif chart_type == "Bubble Chart":
+        sampled_df = df.sample(n=min(len(df), 1000), random_state=42)  # Sample data
         x = st.selectbox("Select X-axis Variable (numerical):", num_list)
         y = st.selectbox("Select Y-axis Variable (numerical):", num_list)
         size = st.selectbox("Select Bubble Size Variable (numerical):", num_list)
         color = st.selectbox("Select Bubble Color Variable (categorical):", ["None"] + cat_list)
+    
         fig, ax = plt.subplots()
-        sns.scatterplot(data=df, x=x, y=y, size=size, hue=None if color == "None" else color, sizes=(20, 200), ax=ax)
+        sns.scatterplot(
+            data=sampled_df, x=x, y=y, size=size, hue=None if color == "None" else color, 
+            sizes=(20, 200), ax=ax
+        )
         ax.set_title(f"Bubble Chart: {x} vs {y} (Size: {size})")
         st.pyplot(fig)
     
@@ -339,21 +344,12 @@ def multivariate_analysis(df, num_list, cat_list):
         x = st.selectbox("Select X-axis Variable (categorical):", cat_list)
         y = st.selectbox("Select Y-axis Variable (categorical):", cat_list)
         value = st.selectbox("Select Value Variable (numerical):", num_list)
-        pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
-        fig, ax = plt.subplots()
-        sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
-        ax.set_title(f"Heat Map: {value} by {x} and {y}")
-        st.pyplot(fig)
+        agg_func = st.radio("Aggregation Function:", ["mean", "sum", "median"], index=0)
     
-    # Heat Map
-    elif chart_type == "Heat Map":
-        x = st.selectbox("Select X-axis Variable (categorical):", cat_list)
-        y = st.selectbox("Select Y-axis Variable (categorical):", cat_list)
-        value = st.selectbox("Select Value Variable (numerical):", num_list)
-        pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
-        fig, ax = plt.subplots()
+        pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc=agg_func)
+        fig, ax = plt.subplots(figsize=(10, 6))
         sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
-        ax.set_title(f"Heat Map: {value} by {x} and {y}")
+        ax.set_title(f"Heat Map ({agg_func.capitalize()} of {value}) by {x} and {y}")
         st.pyplot(fig)
 
 # Main App

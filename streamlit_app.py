@@ -143,47 +143,86 @@ def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
     
-    # Numerical Variable Analysis
     if variable_type == "Numerical":
         col = st.selectbox("Select a numerical variable:", num_list)
-        chart_type = st.selectbox("Choose chart type:", ["Histogram", "Box Plot", "Density Plot", "QQ Plot"])
+        chart_type = st.selectbox(
+            "Choose chart type:",
+            ["Histogram", "Box Plot", "Density Plot", "QQ Plot"]
+        )
         fig, ax = plt.subplots()
+        
+        # Statistics for numerical columns
+        mean = df[col].mean()
+        median = df[col].median()
+        std_dev = df[col].std()
+        q1 = df[col].quantile(0.25)
+        q3 = df[col].quantile(0.75)
+        iqr = q3 - q1
+        lower_bound = q1 - 1.5 * iqr
+        upper_bound = q3 + 1.5 * iqr
+        num_outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)].shape[0]
+
         if chart_type == "Histogram":
-            sns.histplot(df[col], kde=True, ax=ax)
-            ax.axvline(mean, color='red', linestyle='--', label='Mean')
-            ax.axvline(median, color='blue', linestyle='-', label='Median')
+            bins = st.slider("Number of bins:", min_value=5, max_value=50, value=20)
+            log_scale = st.checkbox("Log Scale (X-axis)")
+            sns.histplot(df[col], bins=bins, kde=True, ax=ax)
+            ax.axvline(mean, color="red", linestyle="--", label="Mean")
+            ax.axvline(median, color="blue", linestyle="-", label="Median")
+            if log_scale:
+                ax.set_xscale("log")
             ax.legend()
-            ax.set_title(f"Histogram of {col} with Mean and Median")
+            ax.set_title(f"Histogram of {col}")
         elif chart_type == "Box Plot":
             sns.boxplot(x=df[col], ax=ax)
-            ax.axhline(mean, color='red', linestyle='--', label='Mean')
+            ax.axhline(mean, color="red", linestyle="--", label="Mean")
             ax.legend()
-            ax.set_title(f"Box Plot of {col} with Mean")
+            ax.set_title(f"Box Plot of {col} (Outliers: {num_outliers})")
         elif chart_type == "Density Plot":
             sns.kdeplot(df[col], fill=True, ax=ax)
+            ax.axvline(mean, color="red", linestyle="--", label="Mean")
+            ax.axvline(median, color="blue", linestyle="-", label="Median")
+            ax.legend()
+            ax.set_title(f"Density Plot of {col}")
         elif chart_type == "QQ Plot":
             stats.probplot(df[col], dist="norm", plot=ax)
-        ax.set_title(f"{chart_type} for {col}")
+            ax.set_title(f"QQ Plot of {col}")
+        
         st.pyplot(fig)
-    
-    # Categorical Variable Analysis
+        st.write(
+            f"**Statistics for {col}:**\n"
+            f"- Mean: {mean:.2f}\n"
+            f"- Median: {median:.2f}\n"
+            f"- Standard Deviation: {std_dev:.2f}\n"
+            f"- Outliers (IQR method): {num_outliers}"
+        )
+
     elif variable_type == "Categorical":
         col = st.selectbox("Select a categorical variable:", cat_list)
-        chart_type = st.selectbox("Choose chart type:", ["Count Plot", "Bar Chart", "Pie Chart", "Box Plot"])
+        chart_type = st.selectbox(
+            "Choose chart type:",
+            ["Count Plot", "Bar Chart", "Pie Chart", "Box Plot"]
+        )
         fig, ax = plt.subplots()
+        
         if chart_type == "Count Plot":
             sns.countplot(x=col, data=df, ax=ax)
+            ax.set_title(f"Count Plot of {col}")
         elif chart_type == "Bar Chart":
             df[col].value_counts().plot.bar(ax=ax)
+            ax.set_title(f"Bar Chart of {col}")
         elif chart_type == "Pie Chart":
-            df[col].value_counts().plot.pie(autopct='%1.1f%%', ax=ax)
+            df[col].value_counts().plot.pie(
+                autopct="%1.1f%%", startangle=90, ax=ax
+            )
             ax.set_ylabel("")
+            ax.set_title(f"Pie Chart of {col}")
         elif chart_type == "Box Plot":
             num_col = st.selectbox("Select a numerical variable for Box Plot:", num_list)
             sns.boxplot(x=col, y=num_col, data=df, ax=ax)
-        ax.set_title(f"{chart_type} for {col}")
+            ax.set_title(f"Box Plot of {num_col} by {col}")
+        
         st.pyplot(fig)
-
+        st.write(f"**Category Counts:**\n{df[col].value_counts()}")
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")

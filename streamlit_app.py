@@ -226,10 +226,10 @@ def univariate_analysis(df, num_list, cat_list):
             mime="image/png"
         )
         
-# Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")
-    chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient"])
+    chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient", "Subgroup Analysis"])
+    
     if chart_type == "Scatter Plot":
         x = st.selectbox("Select Independent Variable (X, numerical):", num_list)
         y = st.selectbox("Select Dependent Variable (Y, numerical):", num_list)
@@ -278,14 +278,67 @@ def bivariate_analysis(df, num_list, cat_list):
             sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
             ax.set_title(f"Correlation Matrix ({corr_method} Method)")
             st.pyplot(fig)
-        # Add export option
-        buffer = save_chart_as_image(fig)
+            
+            # Add export option
+            buffer = save_chart_as_image(fig)
+            st.download_button(
+                label="Download Correlation Matrix as PNG",
+                data=buffer,
+                file_name=f"correlation_matrix_{corr_method.lower()}.png",
+                mime="image/png"
+            )
+    elif chart_type == "Subgroup Analysis":
+        st.markdown("### Subgroup Analysis: Density Plot & Box Plot")
+
+        # Select Numerical and Categorical Variables
+        numerical_col = st.selectbox("Select Numerical Variable:", num_list)
+        categorical_col = st.selectbox("Select Categorical Variable:", cat_list)
+
+        # Check if categorical_col is categorical, if not, convert it
+        if not pd.api.types.is_categorical_dtype(df[categorical_col]):
+            df[categorical_col] = df[categorical_col].astype("category")
+
+        # Subgroup Density Plot
+        fig_density, ax_density = plt.subplots(figsize=(12, 6))
+        sns.kdeplot(
+            data=df,
+            x=numerical_col,
+            hue=categorical_col,
+            fill=True,
+            common_norm=False,  # Ensure densities are not normalized across groups
+            alpha=0.6,
+            ax=ax_density,
+        )
+        ax_density.set_title(f"Density Plot of {numerical_col} by {categorical_col}")
+        ax_density.set_xlabel(numerical_col)
+        ax_density.set_ylabel("Density")
+        st.pyplot(fig_density)
+
+        # Add download button for density plot
+        buffer_density = save_chart_as_image(fig_density)
         st.download_button(
-            label="Download Chart as PNG",
-            data=buffer,
-            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
-            mime="image/png"
-        )            
+            label="Download Density Plot as PNG",
+            data=buffer_density,
+            file_name=f"density_plot_{numerical_col}_by_{categorical_col}.png",
+            mime="image/png",
+        )
+
+        # Subgroup Box Plot
+        fig_box, ax_box = plt.subplots(figsize=(12, 6))
+        sns.boxplot(data=df, x=categorical_col, y=numerical_col, ax=ax_box)
+        ax_box.set_title(f"Box Plot of {numerical_col} by {categorical_col}")
+        ax_box.set_xlabel(categorical_col)
+        ax_box.set_ylabel(numerical_col)
+        st.pyplot(fig_box)
+
+        # Add download button for box plot
+        buffer_box = save_chart_as_image(fig_box)
+        st.download_button(
+            label="Download Box Plot as PNG",
+            data=buffer_box,
+            file_name=f"box_plot_{numerical_col}_by_{categorical_col}.png",
+            mime="image/png",
+        )
         
 #Multivariable Analysis
 def multivariate_analysis(df, num_list, cat_list):

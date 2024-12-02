@@ -380,53 +380,63 @@ def subgroup_analysis(df, num_list, cat_list):
     numerical_col = st.selectbox("Select Numerical Variable:", num_list)
     categorical_col = st.selectbox("Select Categorical Variable:", cat_list)
 
+    # Allow user to choose the type of plot(s)
+    st.markdown("### Choose the Chart Type(s)")
+    chart_types = st.multiselect(
+        "Select the chart type(s) you want to generate:",
+        ["Box Plot", "Density Plot"],
+        default=["Box Plot", "Density Plot"]  # Both selected by default
+    )
+
     # Check if categorical_col is categorical, if not, convert it
     if not pd.api.types.is_categorical_dtype(df[categorical_col]):
         df[categorical_col] = df[categorical_col].astype("category")
 
-    # Subgroup Density Plot
-    st.markdown("#### Density Plot")
-    fig_density, ax_density = plt.subplots(figsize=(12, 6))
-    sns.kdeplot(
-        data=df,
-        x=numerical_col,
-        hue=categorical_col,
-        fill=True,
-        common_norm=False,  # Ensure densities are not normalized across groups
-        alpha=0.6,
-        ax=ax_density,
-    )
-    ax_density.set_title(f"Density Plot of {numerical_col} by {categorical_col}")
-    ax_density.set_xlabel(numerical_col)
-    ax_density.set_ylabel("Density")
-    st.pyplot(fig_density)
+    # Generate Density Plot if selected
+    if "Density Plot" in chart_types:
+        st.markdown("#### Density Plot")
+        fig_density, ax_density = plt.subplots(figsize=(12, 6))
+        sns.kdeplot(
+            data=df,
+            x=numerical_col,
+            hue=categorical_col,
+            fill=True,
+            common_norm=False,  # Ensure densities are not normalized across groups
+            alpha=0.6,
+            ax=ax_density,
+        )
+        ax_density.set_title(f"Density Plot of {numerical_col} by {categorical_col}")
+        ax_density.set_xlabel(numerical_col)
+        ax_density.set_ylabel("Density")
+        st.pyplot(fig_density)
 
-    # Add download button for density plot
-    buffer_density = save_chart_as_image(fig_density)
-    st.download_button(
-        label="Download Density Plot as PNG",
-        data=buffer_density,
-        file_name=f"density_plot_{numerical_col}_by_{categorical_col}.png",
-        mime="image/png",
-    )
+        # Add download button for density plot
+        buffer_density = save_chart_as_image(fig_density)
+        st.download_button(
+            label="Download Density Plot as PNG",
+            data=buffer_density,
+            file_name=f"density_plot_{numerical_col}_by_{categorical_col}.png",
+            mime="image/png",
+        )
 
-    # Subgroup Box Plot
-    st.markdown("#### Box Plot")
-    fig_box, ax_box = plt.subplots(figsize=(12, 6))
-    sns.boxplot(data=df, x=categorical_col, y=numerical_col, ax=ax_box)
-    ax_box.set_title(f"Box Plot of {numerical_col} by {categorical_col}")
-    ax_box.set_xlabel(categorical_col)
-    ax_box.set_ylabel(numerical_col)
-    st.pyplot(fig_box)
+    # Generate Box Plot if selected
+    if "Box Plot" in chart_types:
+        st.markdown("#### Box Plot")
+        fig_box, ax_box = plt.subplots(figsize=(12, 6))
+        sns.boxplot(data=df, x=categorical_col, y=numerical_col, ax=ax_box)
+        ax_box.set_title(f"Box Plot of {numerical_col} by {categorical_col}")
+        ax_box.set_xlabel(categorical_col)
+        ax_box.set_ylabel(numerical_col)
+        st.pyplot(fig_box)
 
-    # Add download button for box plot
-    buffer_box = save_chart_as_image(fig_box)
-    st.download_button(
-        label="Download Box Plot as PNG",
-        data=buffer_box,
-        file_name=f"box_plot_{numerical_col}_by_{categorical_col}.png",
-        mime="image/png",
-    )
+        # Add download button for box plot
+        buffer_box = save_chart_as_image(fig_box)
+        st.download_button(
+            label="Download Box Plot as PNG",
+            data=buffer_box,
+            file_name=f"box_plot_{numerical_col}_by_{categorical_col}.png",
+            mime="image/png",
+        )
 # Linear Regression Section
 def linear_regression_analysis(df, num_list):
     st.subheader("Linear Regression Analysis")

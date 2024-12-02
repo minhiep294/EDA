@@ -217,6 +217,14 @@ def univariate_analysis(df, num_list, cat_list):
         
         st.pyplot(fig)
         st.write(f"**Category Counts:**\n{df[col].value_counts()}")
+        # Add export option
+        buffer = save_chart_as_image(fig)
+        st.download_button(
+            label="Download Chart as PNG",
+            data=buffer,
+            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
+            mime="image/png"
+        )
         
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
@@ -270,6 +278,14 @@ def bivariate_analysis(df, num_list, cat_list):
             sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
             ax.set_title(f"Correlation Matrix ({corr_method} Method)")
             st.pyplot(fig)
+        # Add export option
+        buffer = save_chart_as_image(fig)
+        st.download_button(
+            label="Download Chart as PNG",
+            data=buffer,
+            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
+            mime="image/png"
+        )            
         
 #Multivariable Analysis
 def multivariate_analysis(df, num_list, cat_list):
@@ -344,7 +360,15 @@ def multivariate_analysis(df, num_list, cat_list):
         sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
         ax.set_title(f"Heat Map: {value} by {x} and {y}")
         st.pyplot(fig)
-
+        # Add export option
+        buffer = save_chart_as_image(fig)
+        st.download_button(
+            label="Download Chart as PNG",
+            data=buffer,
+            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
+            mime="image/png"
+        )
+        
 # Main App
 st.title("Interactive EDA Application")
 uploaded_file = st.file_uploader("Upload your dataset (CSV only):")

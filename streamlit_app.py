@@ -370,41 +370,61 @@ def multivariate_analysis(df, num_list, cat_list):
         )
         
 # Main App
+# File Upload Section
 st.title("Interactive EDA Application")
-uploaded_file = st.file_uploader("Upload your dataset (CSV only):")
+uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel only):", type=["csv", "xlsx"])
+
 if uploaded_file:
-    df = pd.read_csv(uploaded_file)
-    st.write("### Dataset Preview:")
-    st.dataframe(df.head())
-
-    # Convert date columns to datetime if detected
-    for col in df.columns:
-        if pd.api.types.is_object_dtype(df[col]):
-            try:
-                df[col] = pd.to_datetime(df[col])
-            except Exception:
-                continue
-
-    # Filter the dataset
-    filtered_df = filter_data(df)
-
-    st.write("### Filtered Dataset:")
-    st.dataframe(filtered_df)
-
-    num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
-    cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
-
-    st.sidebar.title("Navigation")
-    analysis_type = st.sidebar.radio(
-        "Choose Analysis Type:",
-        ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"]
-    )
+    # Determine the file type based on its extension
+    file_extension = uploaded_file.name.split(".")[-1].lower()
     
-    if analysis_type == "Data Cleaning & Descriptive":
-        data_cleaning_and_descriptive(df)
-    elif analysis_type == "Univariate Analysis":
-        univariate_analysis(filtered_df, num_list, cat_list)
-    elif analysis_type == "Bivariate Analysis":
-        bivariate_analysis(filtered_df, num_list, cat_list)
-    elif analysis_type == "Multivariate Analysis":
-        multivariate_analysis(filtered_df, num_list, cat_list)
+    try:
+        if file_extension == "csv":
+            # Read CSV file
+            df = pd.read_csv(uploaded_file)
+        elif file_extension == "xlsx":
+            # Read Excel file
+            sheet_name = st.text_input("Enter sheet name (leave blank for default):", "")
+            df = pd.read_excel(uploaded_file, sheet_name=sheet_name if sheet_name else None)
+        else:
+            st.error("Unsupported file type. Please upload a CSV or Excel file.")
+            df = None
+    except Exception as e:
+        st.error(f"Error reading the file: {e}")
+        df = None
+    
+    if df is not None:
+        st.write("### Dataset Preview:")
+        st.dataframe(df.head())
+
+        # Convert date columns to datetime if detected
+        for col in df.columns:
+            if pd.api.types.is_object_dtype(df[col]):
+                try:
+                    df[col] = pd.to_datetime(df[col])
+                except Exception:
+                    continue
+
+        # Filter the dataset
+        filtered_df = filter_data(df)
+
+        st.write("### Filtered Dataset:")
+        st.dataframe(filtered_df)
+
+        num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
+        cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
+
+        st.sidebar.title("Navigation")
+        analysis_type = st.sidebar.radio(
+            "Choose Analysis Type:",
+            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"]
+        )
+
+        if analysis_type == "Data Cleaning & Descriptive":
+            data_cleaning_and_descriptive(df)
+        elif analysis_type == "Univariate Analysis":
+            univariate_analysis(filtered_df, num_list, cat_list)
+        elif analysis_type == "Bivariate Analysis":
+            bivariate_analysis(filtered_df, num_list, cat_list)
+        elif analysis_type == "Multivariate Analysis":
+            multivariate_analysis(filtered_df, num_list, cat_list)

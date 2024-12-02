@@ -4,6 +4,9 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy import stats
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
 
 # Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
@@ -421,7 +424,102 @@ def multivariate_analysis(df, num_list, cat_list):
             file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
             mime="image/png"
         )
-        
+
+# Linear Regression Section
+def linear_regression_analysis(df, num_list):
+    st.subheader("Linear Regression Analysis")
+
+    # Choose between Simple and Multiple Linear Regression
+    regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
+
+    if regression_type == "Simple Regression":
+        st.markdown("### Simple Linear Regression")
+        x_col = st.selectbox("Select Independent Variable (X):", num_list)
+        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+
+        if x_col and y_col:
+            # Prepare data
+            X = df[[x_col]].dropna()  # Independent variable
+            y = df[y_col].dropna()  # Dependent variable
+            common_index = X.index.intersection(y.index)
+            X = X.loc[common_index]
+            y = y.loc[common_index]
+
+            # Fit the model
+            model = LinearRegression()
+            model.fit(X, y)
+
+            # Get predictions and metrics
+            y_pred = model.predict(X)
+            r2 = r2_score(y, y_pred)
+            coef = model.coef_[0]
+            intercept = model.intercept_
+
+            st.write(f"**Equation:** Y = {intercept:.2f} + {coef:.2f} * X")
+            st.write(f"**R-squared:** {r2:.2f}")
+
+            # Plot regression line
+            fig, ax = plt.subplots()
+            sns.scatterplot(x=X[x_col], y=y, ax=ax, label="Data")
+            sns.lineplot(x=X[x_col], y=y_pred, color="red", label="Regression Line", ax=ax)
+            ax.set_title(f"Simple Linear Regression: {y_col} vs {x_col}")
+            ax.set_xlabel(x_col)
+            ax.set_ylabel(y_col)
+            st.pyplot(fig)
+
+            # Residuals plot
+            residuals = y - y_pred
+            fig, ax = plt.subplots()
+            sns.residplot(x=X[x_col], y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+            ax.set_title("Residuals Plot")
+            ax.set_xlabel(x_col)
+            ax.set_ylabel("Residuals")
+            st.pyplot(fig)
+
+    elif regression_type == "Multiple Regression":
+        st.markdown("### Multiple Linear Regression")
+        x_cols = st.multiselect("Select Independent Variables (X):", num_list)
+        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+
+        if x_cols and y_col:
+            # Prepare data
+            X = df[x_cols].dropna()  # Independent variables
+            y = df[y_col].dropna()  # Dependent variable
+            common_index = X.index.intersection(y.index)
+            X = X.loc[common_index]
+            y = y.loc[common_index]
+
+            # Fit the model
+            model = LinearRegression()
+            model.fit(X, y)
+
+            # Get predictions and metrics
+            y_pred = model.predict(X)
+            r2 = r2_score(y, y_pred)
+            mse = mean_squared_error(y, y_pred)
+            adj_r2 = 1 - (1 - r2) * (len(y) - 1) / (len(y) - X.shape[1] - 1)
+
+            st.write(f"**R-squared:** {r2:.2f}")
+            st.write(f"**Adjusted R-squared:** {adj_r2:.2f}")
+            st.write(f"**Mean Squared Error (MSE):** {mse:.2f}")
+
+            # Coefficients
+            st.markdown("### Model Coefficients")
+            coef_df = pd.DataFrame({
+                "Variable": ["Intercept"] + x_cols,
+                "Coefficient": [model.intercept_] + list(model.coef_)
+            })
+            st.table(coef_df)
+
+            # Residuals plot
+            residuals = y - y_pred
+            fig, ax = plt.subplots()
+            sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+            ax.set_title("Residuals Plot")
+            ax.set_xlabel("Predicted Values")
+            ax.set_ylabel("Residuals")
+            st.pyplot(fig)
+
 # Main App
 # File Upload Section
 st.title("Interactive EDA Application")
@@ -470,7 +568,7 @@ if uploaded_file:
         st.sidebar.title("Navigation")
         analysis_type = st.sidebar.radio(
             "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis"]
+            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Linear Regression"]
         )
 
         if analysis_type == "Data Cleaning & Descriptive":
@@ -481,3 +579,5 @@ if uploaded_file:
             bivariate_analysis(filtered_df, num_list, cat_list)
         elif analysis_type == "Multivariate Analysis":
             multivariate_analysis(filtered_df, num_list, cat_list)
+        elif analysis_type == "Linear Regression":
+            linear_regression_analysis(filtered_df, num_list)

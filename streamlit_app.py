@@ -1,3 +1,4 @@
+import io
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -7,6 +8,13 @@ from scipy import stats
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
+
+# Define save_chart_as_image function
+def save_chart_as_image(fig, filename="chart.png"):
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format="png", bbox_inches="tight")
+    buffer.seek(0)
+    return buffer
 
 # Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
@@ -384,13 +392,17 @@ def subgroup_analysis(df, num_list, cat_list):
     st.markdown("### Choose the Chart Type(s)")
     chart_types = st.multiselect(
         "Select the chart type(s) you want to generate:",
-        ["Box Plot", "Density Plot"],
-        default=["Box Plot", "Density Plot"]  # Both selected by default
+        ["Box Plot", "Density Plot"]
     )
 
     # Check if categorical_col is categorical, if not, convert it
     if not pd.api.types.is_categorical_dtype(df[categorical_col]):
         df[categorical_col] = df[categorical_col].astype("category")
+
+    # Handle empty selection
+    if not chart_types:
+        st.warning("Please select at least one chart type to generate.")
+        return
 
     # Generate Density Plot if selected
     if "Density Plot" in chart_types:
@@ -437,6 +449,7 @@ def subgroup_analysis(df, num_list, cat_list):
             file_name=f"box_plot_{numerical_col}_by_{categorical_col}.png",
             mime="image/png",
         )
+        
 # Linear Regression Section
 def linear_regression_analysis(df, num_list):
     st.subheader("Linear Regression Analysis")

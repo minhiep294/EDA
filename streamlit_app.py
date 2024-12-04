@@ -408,43 +408,39 @@ def subgroup_analysis(df, num_list, cat_list):
     if "Bar Chart" in chart_types:
         st.markdown("#### Bar Chart")
 
-        # Let user select the metric(s) to visualize
-        selected_metrics = st.multiselect(
-            "Choose the metric(s) for the bar chart:",
+        # Let user select one metric to visualize
+        selected_metric = st.selectbox(
+            "Choose the metric for the bar chart:",
             ["Mean", "Sum", "Standard Deviation"]
         )
 
-        # Handle case where no metric is selected
-        if not selected_metrics:
-            st.warning("Please select at least one metric for the bar chart.")
-            return
-
-        # Calculate requested statistics
+        # Map metric to the corresponding aggregation function
         metrics_map = {
             "Mean": "mean",
             "Sum": "sum",
             "Standard Deviation": "std"
         }
-        selected_agg_funcs = {metrics_map[metric]: metric for metric in selected_metrics}
-        grouped = df.groupby(categorical_col)[numerical_col].agg(selected_agg_funcs.keys()).reset_index()
+        agg_func = metrics_map[selected_metric]
 
-        # Generate bar charts for each selected metric
-        for agg_func, metric in selected_agg_funcs.items():
-            fig_bar, ax_bar = plt.subplots(figsize=(12, 6))
-            sns.barplot(data=grouped, x=categorical_col, y=agg_func, ax=ax_bar)
-            ax_bar.set_title(f"{metric} of {numerical_col} by {categorical_col}")
-            ax_bar.set_xlabel(categorical_col)
-            ax_bar.set_ylabel(metric)
-            st.pyplot(fig_bar)
+        # Calculate the selected statistic
+        grouped = df.groupby(categorical_col)[numerical_col].agg(agg_func).reset_index()
 
-            # Add download button for each bar chart
-            buffer_bar = save_chart_as_image(fig_bar)
-            st.download_button(
-                label=f"Download {metric} Bar Chart as PNG",
-                data=buffer_bar,
-                file_name=f"bar_chart_{agg_func}_{numerical_col}_by_{categorical_col}.png",
-                mime="image/png",
-            )
+        # Generate the bar chart
+        fig_bar, ax_bar = plt.subplots(figsize=(12, 6))
+        sns.barplot(data=grouped, x=categorical_col, y=agg_func, ax=ax_bar)
+        ax_bar.set_title(f"{selected_metric} of {numerical_col} by {categorical_col}")
+        ax_bar.set_xlabel(categorical_col)
+        ax_bar.set_ylabel(selected_metric)
+        st.pyplot(fig_bar)
+
+        # Add download button for the bar chart
+        buffer_bar = save_chart_as_image(fig_bar)
+        st.download_button(
+            label=f"Download {selected_metric} Bar Chart as PNG",
+            data=buffer_bar,
+            file_name=f"bar_chart_{agg_func}_{numerical_col}_by_{categorical_col}.png",
+            mime="image/png",
+        )
 
     # Generate Box Plot if selected
     if "Box Plot" in chart_types:

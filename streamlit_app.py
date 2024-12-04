@@ -426,7 +426,7 @@ def subgroup_analysis(df, num_list, cat_list):
             "Standard Deviation": "std"
         }
         selected_agg_funcs = {metrics_map[metric]: metric for metric in selected_metrics}
-        grouped = df.groupby(categorical_col)[numerical_col].agg(selected_agg_funcs.keys()).reset_index()
+        grouped = df.groupby(categorical_col)[numerical_col].agg(list(selected_agg_funcs.keys())).reset_index()
 
         # Generate bar charts for each selected metric
         for agg_func, metric in selected_agg_funcs.items():
@@ -473,33 +473,6 @@ def save_chart_as_image(fig):
     buffer.seek(0)
     return buffer
 
-
-    # Generate Box Plot if selected
-    if "Box Plot" in chart_types:
-        st.markdown("#### Box Plot")
-        fig_box, ax_box = plt.subplots(figsize=(12, 6))
-        sns.boxplot(data=df, x=categorical_col, y=numerical_col, ax=ax_box)
-        ax_box.set_title(f"Box Plot of {numerical_col} by {categorical_col}")
-        ax_box.set_xlabel(categorical_col)
-        ax_box.set_ylabel(numerical_col)
-        st.pyplot(fig_box)
-
-        # Add download button for box plot
-        buffer_box = save_chart_as_image(fig_box)
-        st.download_button(
-            label="Download Box Plot as PNG",
-            data=buffer_box,
-            file_name=f"box_plot_{numerical_col}_by_{categorical_col}.png",
-            mime="image/png",
-        )
-
-# Helper function to save charts as images
-def save_chart_as_image(fig):
-    from io import BytesIO
-    buffer = BytesIO()
-    fig.savefig(buffer, format="png")
-    buffer.seek(0)
-    return buffer
     
 # Linear Regression Section
 def linear_regression_analysis(df, num_list):

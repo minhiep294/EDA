@@ -425,11 +425,12 @@ def subgroup_analysis(df, num_list, cat_list):
             "Sum": "sum",
             "Standard Deviation": "std"
         }
-        selected_agg_funcs = {metrics_map[metric]: metric for metric in selected_metrics}
-        grouped = df.groupby(categorical_col)[numerical_col].agg(list(selected_agg_funcs.keys())).reset_index()
+        selected_agg_funcs = [metrics_map[metric] for metric in selected_metrics]
+        grouped = df.groupby(categorical_col)[numerical_col].agg(selected_agg_funcs).reset_index()
 
         # Generate bar charts for each selected metric
-        for agg_func, metric in selected_agg_funcs.items():
+        for metric in selected_metrics:
+            agg_func = metrics_map[metric]
             fig_bar, ax_bar = plt.subplots(figsize=(12, 6))
             sns.barplot(data=grouped, x=categorical_col, y=agg_func, ax=ax_bar)
             ax_bar.set_title(f"{metric} of {numerical_col} by {categorical_col}")
@@ -472,7 +473,6 @@ def save_chart_as_image(fig):
     fig.savefig(buffer, format="png")
     buffer.seek(0)
     return buffer
-
     
 # Linear Regression Section
 def linear_regression_analysis(df, num_list):

@@ -392,7 +392,7 @@ def subgroup_analysis(df, num_list, cat_list):
     st.markdown("### Choose the Chart Type(s)")
     chart_types = st.multiselect(
         "Select the chart type(s) you want to generate:",
-        ["Box Plot", "Density Plot"]
+        ["Box Plot", "Bar Chart (Mean, Sum, Std)"]
     )
 
     # Check if categorical_col is categorical, if not, convert it
@@ -404,32 +404,30 @@ def subgroup_analysis(df, num_list, cat_list):
         st.warning("Please select at least one chart type to generate.")
         return
 
-    # Generate Density Plot if selected
-    if "Density Plot" in chart_types:
-        st.markdown("#### Density Plot")
-        fig_density, ax_density = plt.subplots(figsize=(12, 6))
-        sns.kdeplot(
-            data=df,
-            x=numerical_col,
-            hue=categorical_col,
-            fill=True,
-            common_norm=False,  # Ensure densities are not normalized across groups
-            alpha=0.6,
-            ax=ax_density,
-        )
-        ax_density.set_title(f"Density Plot of {numerical_col} by {categorical_col}")
-        ax_density.set_xlabel(numerical_col)
-        ax_density.set_ylabel("Density")
-        st.pyplot(fig_density)
+    # Generate Bar Chart for Mean, Sum, Std if selected
+    if "Bar Chart (Mean, Sum, Std)" in chart_types:
+        st.markdown("#### Bar Chart (Mean, Sum, Std)")
 
-        # Add download button for density plot
-        buffer_density = save_chart_as_image(fig_density)
-        st.download_button(
-            label="Download Density Plot as PNG",
-            data=buffer_density,
-            file_name=f"density_plot_{numerical_col}_by_{categorical_col}.png",
-            mime="image/png",
-        )
+        # Calculate statistics
+        grouped = df.groupby(categorical_col)[numerical_col].agg(['mean', 'sum', 'std']).reset_index()
+
+        # Plot Bar Charts for Mean, Sum, and Std
+        for metric in ['mean', 'sum', 'std']:
+            fig_bar, ax_bar = plt.subplots(figsize=(12, 6))
+            sns.barplot(data=grouped, x=categorical_col, y=metric, ax=ax_bar)
+            ax_bar.set_title(f"{metric.capitalize()} of {numerical_col} by {categorical_col}")
+            ax_bar.set_xlabel(categorical_col)
+            ax_bar.set_ylabel(f"{metric.capitalize()}")
+            st.pyplot(fig_bar)
+
+            # Add download button for bar chart
+            buffer_bar = save_chart_as_image(fig_bar)
+            st.download_button(
+                label=f"Download {metric.capitalize()} Bar Chart as PNG",
+                data=buffer_bar,
+                file_name=f"bar_chart_{metric}_{numerical_col}_by_{categorical_col}.png",
+                mime="image/png",
+            )
 
     # Generate Box Plot if selected
     if "Box Plot" in chart_types:
@@ -449,7 +447,15 @@ def subgroup_analysis(df, num_list, cat_list):
             file_name=f"box_plot_{numerical_col}_by_{categorical_col}.png",
             mime="image/png",
         )
-        
+
+# Helper function to save charts as images
+def save_chart_as_image(fig):
+    from io import BytesIO
+    buffer = BytesIO()
+    fig.savefig(buffer, format="png")
+    buffer.seek(0)
+    return buffer
+
 # Linear Regression Section
 def linear_regression_analysis(df, num_list):
     st.subheader("Linear Regression Analysis")

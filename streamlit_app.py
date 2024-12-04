@@ -392,7 +392,7 @@ def subgroup_analysis(df, num_list, cat_list):
     st.markdown("### Choose the Chart Type(s)")
     chart_types = st.multiselect(
         "Select the chart type(s) you want to generate:",
-        ["Box Plot", "Bar Chart (Mean, Sum, Std)"]
+        ["Box Plot", "Bar Chart"]
     )
 
     # Check if categorical_col is categorical, if not, convert it
@@ -404,28 +404,46 @@ def subgroup_analysis(df, num_list, cat_list):
         st.warning("Please select at least one chart type to generate.")
         return
 
-    # Generate Bar Chart for Mean, Sum, Std if selected
-    if "Bar Chart (Mean, Sum, Std)" in chart_types:
-        st.markdown("#### Bar Chart (Mean, Sum, Std)")
+    # Generate Bar Chart if selected
+    if "Bar Chart" in chart_types:
+        st.markdown("#### Bar Chart")
 
-        # Calculate statistics
-        grouped = df.groupby(categorical_col)[numerical_col].agg(['mean', 'sum', 'std']).reset_index()
+        # Let user select the metric(s) to visualize
+        selected_metrics = st.multiselect(
+            "Choose the metric(s) for the bar chart:",
+            ["Mean", "Sum", "Standard Deviation"]
+        )
 
-        # Plot Bar Charts for Mean, Sum, and Std
-        for metric in ['mean', 'sum', 'std']:
+        # Handle case where no metric is selected
+        if not selected_metrics:
+            st.warning("Please select at least one metric for the bar chart.")
+            return
+
+        # Calculate requested statistics
+        metrics_map = {
+            "Mean": "mean",
+            "Sum": "sum",
+            "Standard Deviation": "std"
+        }
+        selected_agg_funcs = [metrics_map[metric] for metric in selected_metrics]
+        grouped = df.groupby(categorical_col)[numerical_col].agg(selected_agg_funcs).reset_index()
+
+        # Generate bar charts for each selected metric
+        for metric in selected_metrics:
+            agg_func = metrics_map[metric]
             fig_bar, ax_bar = plt.subplots(figsize=(12, 6))
-            sns.barplot(data=grouped, x=categorical_col, y=metric, ax=ax_bar)
-            ax_bar.set_title(f"{metric.capitalize()} of {numerical_col} by {categorical_col}")
+            sns.barplot(data=grouped, x=categorical_col, y=agg_func, ax=ax_bar)
+            ax_bar.set_title(f"{metric} of {numerical_col} by {categorical_col}")
             ax_bar.set_xlabel(categorical_col)
-            ax_bar.set_ylabel(f"{metric.capitalize()}")
+            ax_bar.set_ylabel(metric)
             st.pyplot(fig_bar)
 
-            # Add download button for bar chart
+            # Add download button for each bar chart
             buffer_bar = save_chart_as_image(fig_bar)
             st.download_button(
-                label=f"Download {metric.capitalize()} Bar Chart as PNG",
+                label=f"Download {metric} Bar Chart as PNG",
                 data=buffer_bar,
-                file_name=f"bar_chart_{metric}_{numerical_col}_by_{categorical_col}.png",
+                file_name=f"bar_chart_{agg_func}_{numerical_col}_by_{categorical_col}.png",
                 mime="image/png",
             )
 
@@ -455,7 +473,7 @@ def save_chart_as_image(fig):
     fig.savefig(buffer, format="png")
     buffer.seek(0)
     return buffer
-
+    
 # Linear Regression Section
 def linear_regression_analysis(df, num_list):
     st.subheader("Linear Regression Analysis")

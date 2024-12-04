@@ -425,12 +425,11 @@ def subgroup_analysis(df, num_list, cat_list):
             "Sum": "sum",
             "Standard Deviation": "std"
         }
-        selected_agg_funcs = [metrics_map[metric] for metric in selected_metrics]
-        grouped = df.groupby(categorical_col)[numerical_col].agg(selected_agg_funcs).reset_index()
+        selected_agg_funcs = {metrics_map[metric]: metric for metric in selected_metrics}
+        grouped = df.groupby(categorical_col)[numerical_col].agg(selected_agg_funcs.keys()).reset_index()
 
         # Generate bar charts for each selected metric
-        for metric in selected_metrics:
-            agg_func = metrics_map[metric]
+        for agg_func, metric in selected_agg_funcs.items():
             fig_bar, ax_bar = plt.subplots(figsize=(12, 6))
             sns.barplot(data=grouped, x=categorical_col, y=agg_func, ax=ax_bar)
             ax_bar.set_title(f"{metric} of {numerical_col} by {categorical_col}")

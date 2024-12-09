@@ -487,51 +487,31 @@ def linear_regression_analysis(df, num_list, cat_list):
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_col and y_col:
-            # Prepare data
-            if x_col in cat_list:  # If X is categorical, convert to dummy variables
-                X = pd.get_dummies(df[x_col], drop_first=True)
-            else:
-                X = df[[x_col]].dropna()  # Independent variable
-            
-            y = df[y_col].dropna()  # Dependent variable
-            common_index = X.index.intersection(y.index)
-            X = X.loc[common_index]
-            y = y.loc[common_index]
+            try:
+                # Handle categorical variables
+                if x_col in cat_list:
+                    X = pd.get_dummies(df[x_col], drop_first=True)
+                else:
+                    X = df[[x_col]].dropna()
 
-            # Fit the model
-            model = LinearRegression()
-            model.fit(X, y)
+                y = df[y_col].dropna()
 
-            # Get predictions and metrics
-            y_pred = model.predict(X)
-            r2 = r2_score(y, y_pred)
-            intercept = model.intercept_
+                # Handle missing data
+                common_index = X.index.intersection(y.index)
+                X = X.loc[common_index]
+                y = y.loc[common_index]
 
-            # Prepare coefficients table
-            coef_df = pd.DataFrame({
-                "Variable": ["Intercept"] + list(X.columns),
-                "Coefficient": [intercept] + list(model.coef_)
-            })
-            st.markdown("### Regression Results")
-            st.markdown("#### Model Coefficients")
-            st.table(coef_df)
+                # Add constant for statsmodels
+                X = sm.add_constant(X)
 
-            # Model metrics
-            results_df = pd.DataFrame({
-                "Metric": ["R-squared"],
-                "Value": [r2]
-            })
-            st.markdown("#### Model Metrics")
-            st.table(results_df)
+                # Fit the model
+                model = sm.OLS(y, X).fit()
 
-            # Residuals plot
-            residuals = y - y_pred
-            fig, ax = plt.subplots()
-            sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-            ax.set_title("Residuals Plot")
-            ax.set_xlabel("Predicted Values")
-            ax.set_ylabel("Residuals")
-            st.pyplot(fig)
+                # Display regression summary
+                st.markdown("### Regression Results")
+                st.text(model.summary())
+            except Exception as e:
+                st.error(f"Error in Simple Regression: {e}")
 
     elif regression_type == "Multiple Regression":
         st.markdown("### Multiple Linear Regression")
@@ -539,53 +519,31 @@ def linear_regression_analysis(df, num_list, cat_list):
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_cols and y_col:
-            # Prepare data
-            X = df[x_cols]
-            y = df[y_col].dropna()
+            try:
+                # Prepare data
+                X = df[x_cols]
 
-            # Convert categorical variables to dummy variables
-            X = pd.get_dummies(X, drop_first=True)
+                # Convert categorical variables to dummy variables
+                X = pd.get_dummies(X, drop_first=True)
 
-            # Drop rows with missing values
-            common_index = X.index.intersection(y.index)
-            X = X.loc[common_index]
-            y = y.loc[common_index]
+                y = df[y_col].dropna()
 
-            # Fit the model
-            model = LinearRegression()
-            model.fit(X, y)
+                # Handle missing data
+                common_index = X.index.intersection(y.index)
+                X = X.loc[common_index]
+                y = y.loc[common_index]
 
-            # Get predictions and metrics
-            y_pred = model.predict(X)
-            r2 = r2_score(y, y_pred)
-            mse = mean_squared_error(y, y_pred)
-            adj_r2 = 1 - (1 - r2) * (len(y) - 1) / (len(y) - X.shape[1] - 1)
+                # Add constant for statsmodels
+                X = sm.add_constant(X)
 
-            # Prepare coefficients table
-            coef_df = pd.DataFrame({
-                "Variable": ["Intercept"] + list(X.columns),
-                "Coefficient": [model.intercept_] + list(model.coef_)
-            })
-            st.markdown("### Regression Results")
-            st.markdown("#### Model Coefficients")
-            st.table(coef_df)
+                # Fit the model
+                model = sm.OLS(y, X).fit()
 
-            # Model metrics
-            metrics_df = pd.DataFrame({
-                "Metric": ["R-squared", "Adjusted R-squared", "Mean Squared Error (MSE)"],
-                "Value": [r2, adj_r2, mse]
-            })
-            st.markdown("#### Model Metrics")
-            st.table(metrics_df)
-
-            # Residuals plot
-            residuals = y - y_pred
-            fig, ax = plt.subplots()
-            sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-            ax.set_title("Residuals Plot")
-            ax.set_xlabel("Predicted Values")
-            ax.set_ylabel("Residuals")
-            st.pyplot(fig)
+                # Display regression summary
+                st.markdown("### Regression Results")
+                st.text(model.summary())
+            except Exception as e:
+                st.error(f"Error in Multiple Regression: {e}")
                 
 # Main App
 # File Upload Section

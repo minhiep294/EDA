@@ -478,61 +478,68 @@ def save_chart_as_image(fig):
     
 # Linear Regression Section
 def linear_regression_analysis(df, num_list, cat_list):
-    st.subheader("Linear Regression Analysis")
+    try:
+        st.subheader("Linear Regression Analysis")
 
-    regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
+        regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
-    if regression_type == "Simple Regression":
-        st.markdown("### Simple Linear Regression")
-        x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
-        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+        if regression_type == "Simple Regression":
+            st.markdown("### Simple Linear Regression")
+            x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
+            y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
-        if x_col and y_col:
-            # Convert categorical variable to dummy if necessary
-            if x_col in cat_list:
-                X = pd.get_dummies(df[x_col], drop_first=True)
-            else:
-                X = df[[x_col]].dropna()
+            if x_col and y_col:
+                # Handle categorical variables
+                if x_col in cat_list:
+                    X = pd.get_dummies(df[x_col], drop_first=True)
+                else:
+                    X = df[[x_col]].dropna()
 
-            y = df[y_col].dropna()
-            common_index = X.index.intersection(y.index)
-            X = X.loc[common_index]
-            y = y.loc[common_index]
+                y = df[y_col].dropna()
 
-            # Add constant for statsmodels
-            X = sm.add_constant(X)
+                # Handle missing data
+                common_index = X.index.intersection(y.index)
+                X = X.loc[common_index]
+                y = y.loc[common_index]
 
-            # Fit the model
-            model = sm.OLS(y, X).fit()
+                # Add constant for statsmodels
+                X = sm.add_constant(X)
 
-            # Display summary
-            st.markdown("### Regression Results")
-            st.text(model.summary())
+                # Fit the model
+                model = sm.OLS(y, X).fit()
 
-    elif regression_type == "Multiple Regression":
-        st.markdown("### Multiple Linear Regression")
-        x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
-        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+                # Display summary
+                st.markdown("### Regression Results")
+                st.text(model.summary())
 
-        if x_cols and y_col:
-            # Convert categorical variables to dummies
-            X = pd.get_dummies(df[x_cols], drop_first=True)
-            y = df[y_col].dropna()
+        elif regression_type == "Multiple Regression":
+            st.markdown("### Multiple Linear Regression")
+            x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
+            y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
-            # Handle missing data
-            common_index = X.index.intersection(y.index)
-            X = X.loc[common_index]
-            y = y.loc[common_index]
+            if x_cols and y_col:
+                # Convert categorical variables to dummies
+                X = pd.get_dummies(df[x_cols], drop_first=True)
+                y = df[y_col].dropna()
 
-            # Add constant for statsmodels
-            X = sm.add_constant(X)
+                # Handle missing data
+                common_index = X.index.intersection(y.index)
+                X = X.loc[common_index]
+                y = y.loc[common_index]
 
-            # Fit the model
-            model = sm.OLS(y, X).fit()
+                # Add constant for statsmodels
+                X = sm.add_constant(X)
 
-            # Display summary
-            st.markdown("### Regression Results")
-            st.text(model.summary())
+                # Fit the model
+                model = sm.OLS(y, X).fit()
+
+                # Display summary
+                st.markdown("### Regression Results")
+                st.text(model.summary())
+
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
+        st.stop()
 
 # Main App
 # File Upload Section

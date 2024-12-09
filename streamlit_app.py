@@ -477,14 +477,10 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
-def linear_regression_analysis(df):
+def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 
-    # Automatically detect numerical and categorical columns
-    num_list = df.select_dtypes(include='number').columns.tolist()
-    cat_list = df.select_dtypes(include='object').columns.tolist()
-
-    # Select Regression Type
+    # Choose between Simple and Multiple Linear Regression
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
@@ -526,8 +522,12 @@ def linear_regression_analysis(df):
 
         if x_cols and y_col:
             try:
-                # Convert categorical variables to dummies
-                X = pd.get_dummies(df[x_cols], drop_first=True)
+                # Prepare data
+                X = df[x_cols]
+
+                # Convert categorical variables to dummy variables
+                X = pd.get_dummies(X, drop_first=True)
+
                 y = df[y_col].dropna()
 
                 # Handle missing data
@@ -546,7 +546,7 @@ def linear_regression_analysis(df):
                 st.text(model.summary())
             except Exception as e:
                 st.error(f"Error in Multiple Regression: {e}")
-
+                
 # Main App
 # File Upload Section
 st.title("Interactive EDA Application")

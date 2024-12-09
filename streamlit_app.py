@@ -8,7 +8,6 @@ from scipy import stats
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
-import statsmodels as sm
 
 # Define save_chart_as_image function
 def save_chart_as_image(fig, filename="chart.png"):

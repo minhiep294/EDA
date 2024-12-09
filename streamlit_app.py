@@ -477,75 +477,74 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
-def linear_regression_analysis(df, num_list, cat_list):
-    st.subheader("Linear Regression Analysis")
+@st.cache_data
+def prepare_data(df, x_cols, y_col):
+    X = pd.get_dummies(df[x_cols], drop_first=True)
+    y = df[y_col].dropna()
+    common_index = X.index.intersection(y.index)
+    X = X.loc[common_index]
+    y = y.loc[common_index]
+    return sm.add_constant(X), y
 
-    # Choose between Simple and Multiple Linear Regression
+@st.cache_data
+def run_regression(X, y):
+    model = sm.OLS(y, X).fit()
+    return model
+
+def linear_regression_analysis(df):
+    st.subheader("Linear Regression Analysis")
+    num_list = df.select_dtypes(include='number').columns.tolist()
+    cat_list = df.select_dtypes(include='object').columns.tolist()
+
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
-        st.markdown("### Simple Linear Regression")
         x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_col and y_col:
-            try:
-                # Handle categorical variables
-                if x_col in cat_list:
-                    X = pd.get_dummies(df[x_col], drop_first=True)
-                else:
-                    X = df[[x_col]].dropna()
+            X, y = prepare_data(df, [x_col], y_col)
+            model = run_regression(X, y)
 
-                y = df[y_col].dropna()
+            # Display key results
+            coef_df = pd.DataFrame({
+                "Variable": model.params.index,
+                "Coefficient": model.params.values,
+                "Standard Error": model.bse.values,
+                "t-Statistic": model.tvalues.values,
+                "P-Value": model.pvalues.values,
+                "Confidence Interval Lower": model.conf_int()[0],
+                "Confidence Interval Upper": model.conf_int()[1],
+            })
+            st.markdown("### Coefficients")
+            st.table(coef_df)
 
-                # Handle missing data
-                common_index = X.index.intersection(y.index)
-                X = X.loc[common_index]
-                y = y.loc[common_index]
-
-                # Add constant for statsmodels
-                X = sm.add_constant(X)
-
-                # Fit the model
-                model = sm.OLS(y, X).fit()
-
-                # Display regression summary
-                st.markdown("### Regression Results")
-                st.text(model.summary())
-            except Exception as e:
-                st.error(f"Error in Simple Regression: {e}")
+            st.markdown("### Model Summary")
+            st.text(model.summary())
 
     elif regression_type == "Multiple Regression":
-        st.markdown("### Multiple Linear Regression")
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_cols and y_col:
-            try:
-                # Prepare data
-                X = df[x_cols]
+            X, y = prepare_data(df, x_cols, y_col)
+            model = run_regression(X, y)
 
-                # Convert categorical variables to dummy variables
-                X = pd.get_dummies(X, drop_first=True)
+            # Display key results
+            coef_df = pd.DataFrame({
+                "Variable": model.params.index,
+                "Coefficient": model.params.values,
+                "Standard Error": model.bse.values,
+                "t-Statistic": model.tvalues.values,
+                "P-Value": model.pvalues.values,
+                "Confidence Interval Lower": model.conf_int()[0],
+                "Confidence Interval Upper": model.conf_int()[1],
+            })
+            st.markdown("### Coefficients")
+            st.table(coef_df)
 
-                y = df[y_col].dropna()
-
-                # Handle missing data
-                common_index = X.index.intersection(y.index)
-                X = X.loc[common_index]
-                y = y.loc[common_index]
-
-                # Add constant for statsmodels
-                X = sm.add_constant(X)
-
-                # Fit the model
-                model = sm.OLS(y, X).fit()
-
-                # Display regression summary
-                st.markdown("### Regression Results")
-                st.text(model.summary())
-            except Exception as e:
-                st.error(f"Error in Multiple Regression: {e}")
+            st.markdown("### Model Summary")
+            st.text(model.summary())
                 
 # Main App
 # File Upload Section

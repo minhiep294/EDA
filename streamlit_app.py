@@ -636,6 +636,6 @@ if uploaded_file:
         elif analysis_type == "Multivariate Analysis":
             multivariate_analysis(filtered_df, num_list, cat_list)
         elif analysis_type == "Linear Regression":
-            linear_regression_analysis(filtered_df, num_list)
+            linear_regression_analysis(filtered_df, num_list, cat_list)
         elif analysis_type == "Subgroup Analysis":
             subgroup_analysis(filtered_df, num_list, cat_list)

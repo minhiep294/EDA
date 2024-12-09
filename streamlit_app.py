@@ -477,74 +477,117 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
-@st.cache_data
-def prepare_data(df, x_cols, y_col):
-    X = pd.get_dummies(df[x_cols], drop_first=True)
-    y = df[y_col].dropna()
-    common_index = X.index.intersection(y.index)
-    X = X.loc[common_index]
-    y = y.loc[common_index]
-    return sm.add_constant(X), y
-
-@st.cache_data
-def run_regression(X, y):
-    model = sm.OLS(y, X).fit()
-    return model
-
-def linear_regression_analysis(df):
+def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
-    num_list = df.select_dtypes(include='number').columns.tolist()
-    cat_list = df.select_dtypes(include='object').columns.tolist()
 
+    # Choose between Simple and Multiple Linear Regression
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
+        st.markdown("### Simple Linear Regression")
         x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_col and y_col:
-            X, y = prepare_data(df, [x_col], y_col)
-            model = run_regression(X, y)
+            # Prepare data
+            if x_col in cat_list:  # If X is categorical, convert to dummy variables
+                X = pd.get_dummies(df[x_col], drop_first=True)
+            else:
+                X = df[[x_col]].dropna()  # Independent variable
+            
+            y = df[y_col].dropna()  # Dependent variable
+            common_index = X.index.intersection(y.index)
+            X = X.loc[common_index]
+            y = y.loc[common_index]
 
-            # Display key results
+            # Fit the model
+            model = LinearRegression()
+            model.fit(X, y)
+
+            # Get predictions and metrics
+            y_pred = model.predict(X)
+            r2 = r2_score(y, y_pred)
+            intercept = model.intercept_
+
+            # Prepare coefficients table
             coef_df = pd.DataFrame({
-                "Variable": model.params.index,
-                "Coefficient": model.params.values,
-                "Standard Error": model.bse.values,
-                "t-Statistic": model.tvalues.values,
-                "P-Value": model.pvalues.values,
-                "Confidence Interval Lower": model.conf_int()[0],
-                "Confidence Interval Upper": model.conf_int()[1],
+                "Variable": ["Intercept"] + list(X.columns),
+                "Coefficient": [intercept] + list(model.coef_)
             })
-            st.markdown("### Coefficients")
+            st.markdown("### Regression Results")
+            st.markdown("#### Model Coefficients")
             st.table(coef_df)
 
-            st.markdown("### Model Summary")
-            st.text(model.summary())
+            # Model metrics
+            results_df = pd.DataFrame({
+                "Metric": ["R-squared"],
+                "Value": [r2]
+            })
+            st.markdown("#### Model Metrics")
+            st.table(results_df)
+
+            # Residuals plot
+            residuals = y - y_pred
+            fig, ax = plt.subplots()
+            sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+            ax.set_title("Residuals Plot")
+            ax.set_xlabel("Predicted Values")
+            ax.set_ylabel("Residuals")
+            st.pyplot(fig)
 
     elif regression_type == "Multiple Regression":
+        st.markdown("### Multiple Linear Regression")
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_cols and y_col:
-            X, y = prepare_data(df, x_cols, y_col)
-            model = run_regression(X, y)
+            # Prepare data
+            X = df[x_cols]
+            y = df[y_col].dropna()
 
-            # Display key results
+            # Convert categorical variables to dummy variables
+            X = pd.get_dummies(X, drop_first=True)
+
+            # Drop rows with missing values
+            common_index = X.index.intersection(y.index)
+            X = X.loc[common_index]
+            y = y.loc[common_index]
+
+            # Fit the model
+            model = LinearRegression()
+            model.fit(X, y)
+
+            # Get predictions and metrics
+            y_pred = model.predict(X)
+            r2 = r2_score(y, y_pred)
+            mse = mean_squared_error(y, y_pred)
+            adj_r2 = 1 - (1 - r2) * (len(y) - 1) / (len(y) - X.shape[1] - 1)
+
+            # Prepare coefficients table
             coef_df = pd.DataFrame({
-                "Variable": model.params.index,
-                "Coefficient": model.params.values,
-                "Standard Error": model.bse.values,
-                "t-Statistic": model.tvalues.values,
-                "P-Value": model.pvalues.values,
-                "Confidence Interval Lower": model.conf_int()[0],
-                "Confidence Interval Upper": model.conf_int()[1],
+                "Variable": ["Intercept"] + list(X.columns),
+                "Coefficient": [model.intercept_] + list(model.coef_)
             })
-            st.markdown("### Coefficients")
+            st.markdown("### Regression Results")
+            st.markdown("#### Model Coefficients")
             st.table(coef_df)
 
-            st.markdown("### Model Summary")
-            st.text(model.summary())
+            # Model metrics
+            metrics_df = pd.DataFrame({
+                "Metric": ["R-squared", "Adjusted R-squared", "Mean Squared Error (MSE)"],
+                "Value": [r2, adj_r2, mse]
+            })
+            st.markdown("#### Model Metrics")
+            st.table(metrics_df)
+
+            # Residuals plot
+            residuals = y - y_pred
+            fig, ax = plt.subplots()
+            sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+            ax.set_title("Residuals Plot")
+            ax.set_xlabel("Predicted Values")
+            ax.set_ylabel("Residuals")
+            st.pyplot(fig)
                 
 # Main App
 # File Upload Section

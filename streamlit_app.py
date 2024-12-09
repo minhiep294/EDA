@@ -477,12 +477,8 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
-def linear_regression_analysis(df):
+def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
-
-    # Automatically detect numerical and categorical columns
-    num_list = df.select_dtypes(include='number').columns.tolist()
-    cat_list = df.select_dtypes(include='object').columns.tolist()
 
     # Choose between Simple and Multiple Linear Regression
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])

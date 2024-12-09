@@ -477,18 +477,23 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
-def linear_regression_analysis(df, num_list, cat_list):
-    try:
-        st.subheader("Linear Regression Analysis")
+def linear_regression_analysis(df):
+    st.subheader("Linear Regression Analysis")
 
-        regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
+    # Automatically detect numerical and categorical columns
+    num_list = df.select_dtypes(include='number').columns.tolist()
+    cat_list = df.select_dtypes(include='object').columns.tolist()
 
-        if regression_type == "Simple Regression":
-            st.markdown("### Simple Linear Regression")
-            x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
-            y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+    # Select Regression Type
+    regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
-            if x_col and y_col:
+    if regression_type == "Simple Regression":
+        st.markdown("### Simple Linear Regression")
+        x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
+        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+
+        if x_col and y_col:
+            try:
                 # Handle categorical variables
                 if x_col in cat_list:
                     X = pd.get_dummies(df[x_col], drop_first=True)
@@ -511,13 +516,16 @@ def linear_regression_analysis(df, num_list, cat_list):
                 # Display summary
                 st.markdown("### Regression Results")
                 st.text(model.summary())
+            except Exception as e:
+                st.error(f"Error in Simple Regression: {e}")
 
-        elif regression_type == "Multiple Regression":
-            st.markdown("### Multiple Linear Regression")
-            x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
-            y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+    elif regression_type == "Multiple Regression":
+        st.markdown("### Multiple Linear Regression")
+        x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
+        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
-            if x_cols and y_col:
+        if x_cols and y_col:
+            try:
                 # Convert categorical variables to dummies
                 X = pd.get_dummies(df[x_cols], drop_first=True)
                 y = df[y_col].dropna()
@@ -536,10 +544,8 @@ def linear_regression_analysis(df, num_list, cat_list):
                 # Display summary
                 st.markdown("### Regression Results")
                 st.text(model.summary())
-
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-        st.stop()
+            except Exception as e:
+                st.error(f"Error in Multiple Regression: {e}")
 
 # Main App
 # File Upload Section

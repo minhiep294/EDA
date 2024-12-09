@@ -6,4 +6,3 @@ openai
 scipy
 statsmodels
 scikit-learn
-statsmodels.api

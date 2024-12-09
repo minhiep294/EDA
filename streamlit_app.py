@@ -476,6 +476,7 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
+# Linear Regression Section
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 
@@ -489,23 +490,45 @@ def linear_regression_analysis(df, num_list, cat_list):
             y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
             if x_col and y_col:
+                st.write(f"Selected X: {x_col}, Selected Y: {y_col}")
+                
+                # Handle categorical variables
                 if x_col in cat_list:
                     X = pd.get_dummies(df[x_col], drop_first=True)
                 else:
-                    X = df[[x_col]].dropna()
+                    X = df[[x_col]]
 
-                y = df[y_col].dropna()
+                y = df[y_col]
 
-                # Handle missing data
-                common_index = X.index.intersection(y.index)
-                X = X.loc[common_index]
-                y = y.loc[common_index]
+                # Drop NaN values from both X and y
+                data = pd.concat([X, y], axis=1).dropna()
+                X = data[X.columns]
+                y = data[y.name]
 
-                X = sm.add_constant(X)  # Add constant for statsmodels
-                model = sm.OLS(y, X).fit()  # Fit the model
+                # Check shapes of X and y
+                st.write(f"X shape: {X.shape}, y shape: {y.shape}")
 
+                # Add constant for statsmodels
+                X = sm.add_constant(X)
+
+                # Fit the model
+                model = sm.OLS(y, X).fit()
+
+                # Display regression summary
                 st.markdown("### Regression Results")
                 st.text(model.summary())
+
+                # Allow users to download the regression results
+                result_buffer = io.StringIO()
+                model.summary().as_text().splitlines()
+                result_buffer.write(model.summary().as_text())
+                result_buffer.seek(0)
+                st.download_button(
+                    label="Download Regression Results",
+                    data=result_buffer,
+                    file_name="regression_results.txt",
+                    mime="text/plain"
+                )
 
         elif regression_type == "Multiple Regression":
             st.markdown("### Multiple Linear Regression")
@@ -513,19 +536,42 @@ def linear_regression_analysis(df, num_list, cat_list):
             y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
             if x_cols and y_col:
+                st.write(f"Selected X Columns: {x_cols}, Selected Y: {y_col}")
+
+                # Prepare data
                 X = df[x_cols]
                 X = pd.get_dummies(X, drop_first=True)  # Convert categorical variables
-                y = df[y_col].dropna()
+                y = df[y_col]
 
-                common_index = X.index.intersection(y.index)
-                X = X.loc[common_index]
-                y = y.loc[common_index]
+                # Drop NaN values from both X and y
+                data = pd.concat([X, y], axis=1).dropna()
+                X = data[X.columns]
+                y = data[y.name]
 
-                X = sm.add_constant(X)  # Add constant for statsmodels
-                model = sm.OLS(y, X).fit()  # Fit the model
+                # Check shapes of X and y
+                st.write(f"X shape: {X.shape}, y shape: {y.shape}")
 
+                # Add constant for statsmodels
+                X = sm.add_constant(X)
+
+                # Fit the model
+                model = sm.OLS(y, X).fit()
+
+                # Display regression summary
                 st.markdown("### Regression Results")
                 st.text(model.summary())
+
+                # Allow users to download the regression results
+                result_buffer = io.StringIO()
+                model.summary().as_text().splitlines()
+                result_buffer.write(model.summary().as_text())
+                result_buffer.seek(0)
+                st.download_button(
+                    label="Download Regression Results",
+                    data=result_buffer,
+                    file_name="regression_results.txt",
+                    mime="text/plain"
+                )
 
     except Exception as e:
         st.error(f"Error in Regression Analysis: {e}")

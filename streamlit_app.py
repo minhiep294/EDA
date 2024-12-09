@@ -8,6 +8,7 @@ from scipy import stats
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
+import statsmodels.api as sm
 
 # Define save_chart_as_image function
 def save_chart_as_image(fig, filename="chart.png"):
@@ -481,14 +482,13 @@ def linear_regression_analysis(df, num_list, cat_list):
     # Choose between Simple and Multiple Linear Regression
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
-    if regression_type == "Simple Regression":
-        st.markdown("### Simple Linear Regression")
-        x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
-        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+    try:
+        if regression_type == "Simple Regression":
+            st.markdown("### Simple Linear Regression")
+            x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
+            y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
-        if x_col and y_col:
-            try:
-                # Handle categorical variables
+            if x_col and y_col:
                 if x_col in cat_list:
                     X = pd.get_dummies(df[x_col], drop_first=True)
                 else:
@@ -501,49 +501,34 @@ def linear_regression_analysis(df, num_list, cat_list):
                 X = X.loc[common_index]
                 y = y.loc[common_index]
 
-                # Add constant for statsmodels
-                X = sm.add_constant(X)
+                X = sm.add_constant(X)  # Add constant for statsmodels
+                model = sm.OLS(y, X).fit()  # Fit the model
 
-                # Fit the model
-                model = sm.OLS(y, X).fit()
-
-                # Display regression summary
                 st.markdown("### Regression Results")
                 st.text(model.summary())
-            except Exception as e:
-                st.error(f"Error in Simple Regression: {e}")
 
-    elif regression_type == "Multiple Regression":
-        st.markdown("### Multiple Linear Regression")
-        x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
-        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+        elif regression_type == "Multiple Regression":
+            st.markdown("### Multiple Linear Regression")
+            x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
+            y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
-        if x_cols and y_col:
-            try:
-                # Prepare data
+            if x_cols and y_col:
                 X = df[x_cols]
-
-                # Convert categorical variables to dummy variables
-                X = pd.get_dummies(X, drop_first=True)
-
+                X = pd.get_dummies(X, drop_first=True)  # Convert categorical variables
                 y = df[y_col].dropna()
 
-                # Handle missing data
                 common_index = X.index.intersection(y.index)
                 X = X.loc[common_index]
                 y = y.loc[common_index]
 
-                # Add constant for statsmodels
-                X = sm.add_constant(X)
+                X = sm.add_constant(X)  # Add constant for statsmodels
+                model = sm.OLS(y, X).fit()  # Fit the model
 
-                # Fit the model
-                model = sm.OLS(y, X).fit()
-
-                # Display regression summary
                 st.markdown("### Regression Results")
                 st.text(model.summary())
-            except Exception as e:
-                st.error(f"Error in Multiple Regression: {e}")
+
+    except Exception as e:
+        st.error(f"Error in Regression Analysis: {e}")
                 
 # Main App
 # File Upload Section

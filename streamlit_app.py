@@ -1,5 +1,7 @@
 import io
 import openpyxl
+import requests
+import base64
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -8,7 +10,6 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
-import numpy as np
 import statsmodels.api as sm
 
 # Define save_chart_as_image function
@@ -492,41 +493,25 @@ def save_chart_as_image(fig):
 # Linear Regression Section
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
-
-    # Choose regression type
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
-    # Simple Regression
     if regression_type == "Simple Regression":
         x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
-
         if x_col and y_col:
             try:
-                # Prepare the data
-                if x_col in cat_list:  # Categorical variable
+                if x_col in cat_list:
                     X = pd.get_dummies(df[x_col], drop_first=True)
-                else:  # Numerical variable
+                else:
                     X = df[[x_col]]
-
                 y = df[y_col]
-
-                # Combine and drop missing values
                 combined_data = pd.concat([X, y], axis=1).dropna()
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
-
-                # Add constant for intercept
                 X = sm.add_constant(X)
-
-                # Fit the model
                 model = sm.OLS(y, X).fit()
-
-                # Display the summary
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
-
-                # Residuals plot
                 residuals = model.resid
                 fitted_vals = model.fittedvalues
                 fig, ax = plt.subplots()
@@ -535,37 +520,23 @@ def linear_regression_analysis(df, num_list, cat_list):
                 ax.set_xlabel("Fitted Values")
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
-
             except Exception as e:
                 st.error(f"An error occurred during Simple Linear Regression: {e}")
 
-    # Multiple Regression
     elif regression_type == "Multiple Regression":
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
-
         if x_cols and y_col:
             try:
-                # Prepare the data
-                X = pd.get_dummies(df[x_cols], drop_first=True)  # Handles categorical variables
+                X = pd.get_dummies(df[x_cols], drop_first=True)
                 y = df[y_col]
-
-                # Combine and drop missing values
                 combined_data = pd.concat([X, y], axis=1).dropna()
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
-
-                # Add constant for intercept
                 X = sm.add_constant(X)
-
-                # Fit the model
                 model = sm.OLS(y, X).fit()
-
-                # Display the summary
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
-
-                # Residuals plot
                 residuals = model.resid
                 fitted_vals = model.fittedvalues
                 fig, ax = plt.subplots()
@@ -574,10 +545,127 @@ def linear_regression_analysis(df, num_list, cat_list):
                 ax.set_xlabel("Fitted Values")
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
-
             except Exception as e:
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
-                
+
+# Main Application
+def main():
+    st.title("Interactive EDA and AI App")
+
+    api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
+
+    st.sidebar.title("Navigation")
+    analysis_type = st.sidebar.radio(
+        "Choose Analysis Type:",
+        ["EDA (Data Analysis)", "Linear Regression", "AI Image Analysis"]
+    )
+
+    if analysis_type == "EDA (Data Analysis)":
+        uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
+        if uploaded_file:
+            file_extension = uploaded_file.name.split(".")[-1].lower()
+            try:
+                if file_extension == "csv":
+                    df = pd.read_csv(uploaded_file)
+                elif file_extension == "xlsx":
+                    df = pd.read_excel(uploaded_file, engine="openpyxl")
+                else:
+                    st.error("Unsupported file type. Please upload a CSV or Excel file.")
+                    return
+
+                if df.empty:
+                    st.error("The uploaded file is empty. Please check the file.")
+                    return
+
+                st.write("### Dataset Preview:")
+                st.dataframe(df.head())
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+
+    elif analysis_type == "Linear Regression":
+        uploaded_file = st.file_uploader("Upload your dataset for Regression (CSV or Excel):", type=["csv", "xlsx"])
+        if uploaded_file:
+            file_extension = uploaded_file.name.split(".")[-1].lower()
+            try:
+                if file_extension == "csv":
+                    df = pd.read_csv(uploaded_file)
+                elif file_extension == "xlsx":
+                    df = pd.read_excel(uploaded_file, engine="openpyxl")
+                else:
+                    st.error("Unsupported file type. Please upload a CSV or Excel file.")
+                    return
+
+                if df.empty:
+                    st.error("The uploaded file is empty. Please check the file.")
+                    return
+
+                num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+                cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
+
+                linear_regression_analysis(df, num_list, cat_list)
+
+            except Exception as e:
+                st.error(f"An error occurred: {e}")
+
+    elif analysis_type == "AI Image Analysis":
+        if api_key:
+            ai_image_analysis(api_key)
+        else:
+            st.warning("Please enter a valid API key to proceed.")
+
+if __name__ == "__main__":
+    main()
+
+# Helper function to encode image to base64
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode("utf-8")
+        
+# AI Section: Analyze images using GPT-4 Vision API
+def ai_image_analysis(api_key):
+    st.header("AI Image Analysis with GPT-4 Vision")
+    uploaded_image = st.file_uploader("Upload an image:", type=["jpg", "jpeg", "png"])
+    if uploaded_image:
+        with open("temp_image.jpg", "wb") as temp_file:
+            temp_file.write(uploaded_image.read())
+
+        st.image("temp_image.jpg", caption="Uploaded Image", use_column_width=True)
+
+        base64_image = encode_image("temp_image.jpg")
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
+
+        payload = {
+            "model": "gpt-4-vision-preview",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "What’s in this image?"},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                    ],
+                }
+            ],
+            "max_tokens": 300,
+        }
+
+        st.write("Analyzing the image... Please wait.")
+        try:
+            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
+            response_data = response.json()
+            if response.status_code == 200:
+                gpt_response = response_data["choices"][0]["message"]["content"]
+                st.subheader("AI's Response:")
+                st.write(gpt_response)
+            else:
+                st.error("Failed to analyze the image. Check the API key and request.")
+                st.write(f"Error Details: {response_data}")
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
 # Main App
 # Helper function for dataset filtering
 def filter_data(df):

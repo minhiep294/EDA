@@ -484,6 +484,7 @@ def linear_regression_analysis(df, num_list, cat_list):
 
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
+
 # Main App
 st.title("Interactive EDA Application")
 
@@ -495,19 +496,15 @@ if uploaded_file:
     try:
         if file_extension == "csv":
             df = pd.read_csv(uploaded_file)
-        elif file_extension == "xlsx":
-            sheet_names = pd.ExcelFile(uploaded_file, engine='openpyxl').sheet_names
-            selected_sheet = st.selectbox("Select sheet to load", sheet_names)
-            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet, engine='openpyxl')
         else:
-            st.error("Unsupported file type. Please upload a CSV or Excel file.")
-            df = None
+            sheet_names = pd.ExcelFile(uploaded_file, engine="openpyxl").sheet_names
+            selected_sheet = st.selectbox("Select sheet to load", sheet_names)
+            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet, engine="openpyxl")
     except Exception as e:
         st.error(f"Error loading file: {e}")
         df = None
 
     if df is not None:
-        # Dataset Preview
         st.write("### Dataset Preview")
         st.dataframe(df.head())
 

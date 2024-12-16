@@ -493,18 +493,22 @@ def save_chart_as_image(fig):
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 
+    # Choose regression type
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
+    # Simple Regression
     if regression_type == "Simple Regression":
         x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_col and y_col:
             try:
-                if x_col in cat_list:
+                # Prepare the data
+                if x_col in cat_list:  # Categorical variable
                     X = pd.get_dummies(df[x_col], drop_first=True)
-                else:
+                else:  # Numerical variable
                     X = df[[x_col]]
+
                 y = df[y_col]
 
                 # Combine and drop missing values
@@ -518,7 +522,7 @@ def linear_regression_analysis(df, num_list, cat_list):
                 # Fit the model
                 model = sm.OLS(y, X).fit()
 
-                # Display results
+                # Display the summary
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
 
@@ -535,13 +539,15 @@ def linear_regression_analysis(df, num_list, cat_list):
             except Exception as e:
                 st.error(f"An error occurred during Simple Linear Regression: {e}")
 
+    # Multiple Regression
     elif regression_type == "Multiple Regression":
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_cols and y_col:
             try:
-                X = pd.get_dummies(df[x_cols], drop_first=True)
+                # Prepare the data
+                X = pd.get_dummies(df[x_cols], drop_first=True)  # Handles categorical variables
                 y = df[y_col]
 
                 # Combine and drop missing values
@@ -555,7 +561,7 @@ def linear_regression_analysis(df, num_list, cat_list):
                 # Fit the model
                 model = sm.OLS(y, X).fit()
 
-                # Display results
+                # Display the summary
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
 

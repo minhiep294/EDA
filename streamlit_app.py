@@ -449,17 +449,14 @@ def linear_regression_analysis(df, num_list, cat_list):
             except Exception as e:
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
                 
-# Main Functionality
 def main():
     st.title("Interactive EDA and Regression App")
 
-    # File uploader
     uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
     if uploaded_file:
         try:
+            # File handling
             file_extension = uploaded_file.name.split(".")[-1].lower()
-
-            # Handle file types
             if file_extension == "csv":
                 df = pd.read_csv(uploaded_file)
             elif file_extension == "xlsx":
@@ -472,47 +469,31 @@ def main():
                 st.error("The uploaded file is empty. Please check the file.")
                 return
 
-            # Dataset preview
-            st.write("### Dataset Preview:")
-            st.dataframe(df.head())
-
-            # Identify numerical and categorical columns
-            num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
-            cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
-
-            # Sidebar navigation
+            # Sidebar Navigation
             st.sidebar.title("Navigation")
             analysis_type = st.sidebar.radio(
                 "Choose Analysis Type:",
-                [
-                    "Data Cleaning & Descriptive",
-                    "Univariate Analysis",
-                    "Bivariate Analysis",
-                    "Multivariate Analysis",
-                    "Linear Regression",
-                ],
+                ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Linear Regression"]
             )
-            
-            # Debug the selected option
-            st.write(f"Debug: Selected Analysis Type: {analysis_type}")
 
-            # Navigate based on analysis type
+            # Routing to the selected analysis
             if analysis_type == "Data Cleaning & Descriptive":
+                st.write("Debug: Running Data Cleaning and Descriptive Stats")
                 data_cleaning_and_descriptive(df)
             elif analysis_type == "Univariate Analysis":
+                st.write("Debug: Running Univariate Analysis")
                 univariate_analysis(df, num_list, cat_list)
             elif analysis_type == "Bivariate Analysis":
+                st.write("Debug: Running Bivariate Analysis")
                 bivariate_analysis(df, num_list, cat_list)
             elif analysis_type == "Multivariate Analysis":
+                st.write("Debug: Running Multivariate Analysis")
                 multivariate_analysis(df, num_list)
             elif analysis_type == "Linear Regression":
+                st.write("Debug: Running Linear Regression")
                 linear_regression_analysis(df, num_list)
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
     else:
         st.warning("Please upload a file to proceed.")
-
-
-if __name__ == "__main__":
-    main()

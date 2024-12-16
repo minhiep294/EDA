@@ -572,7 +572,7 @@ def linear_regression_analysis(df, num_list, cat_list):
 # Main App
 st.title("Interactive EDA Application")
 
-# File Upload
+# File Upload Section
 uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
 
 if uploaded_file:
@@ -581,58 +581,44 @@ if uploaded_file:
         if file_extension == "csv":
             df = pd.read_csv(uploaded_file)
         elif file_extension == "xlsx":
-            sheet_names = pd.ExcelFile(uploaded_file).sheet_names
+            sheet_names = pd.ExcelFile(uploaded_file, engine='openpyxl').sheet_names
             selected_sheet = st.selectbox("Select sheet to load", sheet_names)
-            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
+            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet, engine='openpyxl')
         else:
             st.error("Unsupported file type. Please upload a CSV or Excel file.")
+            df = None
     except Exception as e:
         st.error(f"Error loading file: {e}")
         df = None
 
     if df is not None:
-        st.write("Dataset Preview")
+        # Dataset Preview
+        st.write("### Dataset Preview")
         st.dataframe(df.head())
 
-            # Sidebar for analysis options
-            st.sidebar.header("Select Analysis Option")
-            analysis_option = st.sidebar.selectbox("Choose analysis type", ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis"]
+        # Sidebar Navigation
+        analysis_type = st.sidebar.radio(
+            "Choose Analysis Type:",
+            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
         )
 
-            # General filtering with multiple options
-            filter_col = st.sidebar.selectbox("Filter by Column", ["None"] + data.columns.tolist())
-            if filter_col != "None":
-                if pd.api.types.is_numeric_dtype(data[filter_col]):
-                    min_val, max_val = st.sidebar.slider(
-                        f"Select range for {filter_col}",
-                        float(data[filter_col].min()),
-                        float(data[filter_col].max()),
-                        (float(data[filter_col].min()), float(data[filter_col].max()))
-                    )
-                    data = data[(data[filter_col] >= min_val) & (data[filter_col] <= max_val)]
-                else:
-                    unique_values = data[filter_col].dropna().unique()
-                    selected_values = st.sidebar.multiselect(f"Select values for {filter_col}", unique_values, default=unique_values)
-                    data = data[data[filter_col].isin(selected_values)]
-
-            st.write("Filtered Dataset:")
-            st.dataframe(data)
-
+        # Identify Numerical and Categorical Columns
         num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
         cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
 
-        # Perform Selected Analysis
-            if analysis_type == "Data Cleaning & Descriptive":
-                data_cleaning_and_descriptive(filtered_df)
-            elif analysis_type == "Univariate Analysis":
-                univariate_analysis(filtered_df, num_list, cat_list)
-            elif analysis_type == "Bivariate Analysis":
-                bivariate_analysis(filtered_df, num_list, cat_list)
-            elif analysis_type == "Multivariate Analysis":
-                multivariate_analysis(filtered_df, num_list, cat_list)
-            elif analysis_type == "Subgroup Analysis":
-                subgroup_analysis(filtered_df, num_list, cat_list)
-            elif analysis_type == "Linear Regression":
-                linear_regression_analysis(filtered_df, num_list, cat_list)
+        # Perform Analysis Based on Selection
+        if analysis_type == "Data Cleaning & Descriptive":
+            data_cleaning_and_descriptive(df)
+        elif analysis_type == "Univariate Analysis":
+            univariate_analysis(df, num_list, cat_list)
+        elif analysis_type == "Bivariate Analysis":
+            bivariate_analysis(df, num_list, cat_list)
+        elif analysis_type == "Multivariate Analysis":
+            multivariate_analysis(filtered_df, num_list, cat_list)
+        elif analysis_type == "Linear Regression":
+            linear_regression_analysis(filtered_df, num_list, cat_list)
+        elif analysis_type == "Subgroup Analysis":
+            subgroup_analysis(filtered_df, num_list, cat_list)
+            
 else:
     st.warning("Please upload a dataset to begin.")

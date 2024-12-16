@@ -572,7 +572,6 @@ def linear_regression_analysis(df, num_list, cat_list):
             except Exception as e:
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
                 
-# Main App
 # Main Functionality
 def main():
     st.title("Interactive EDA and Regression App")
@@ -608,14 +607,26 @@ def main():
             st.sidebar.title("Navigation")
             analysis_type = st.sidebar.radio(
                 "Choose Analysis Type:",
-                ["Data Cleaning & Descriptive", "Univariate Analysis"],
+                [
+                    "Data Cleaning & Descriptive",
+                    "Univariate Analysis",
+                    "Bivariate Analysis",
+                    "Multivariate Analysis",
+                    "Linear Regression",
+                ],
             )
 
-            # Navigation
+            # Navigate based on analysis type
             if analysis_type == "Data Cleaning & Descriptive":
                 data_cleaning_and_descriptive(df)
             elif analysis_type == "Univariate Analysis":
                 univariate_analysis(df, num_list, cat_list)
+            elif analysis_type == "Bivariate Analysis":
+                bivariate_analysis(df, num_list, cat_list)
+            elif analysis_type == "Multivariate Analysis":
+                multivariate_analysis(df, num_list)
+            elif analysis_type == "Linear Regression":
+                linear_regression_analysis(df, num_list)
 
         except Exception as e:
             st.error(f"An error occurred: {e}")

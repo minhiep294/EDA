@@ -604,11 +604,17 @@ if uploaded_file:
         cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
 
         # Perform Selected Analysis
-        if analysis_type == "Data Cleaning & Descriptive":
-            data_cleaning_and_descriptive(df)
-        elif analysis_type == "Univariate Analysis":
-            univariate_analysis(df, num_list, cat_list)
-        elif analysis_type == "Bivariate Analysis":
-            bivariate_analysis(df, num_list, cat_list)
+            if analysis_type == "Data Cleaning & Descriptive":
+                data_cleaning_and_descriptive(filtered_df)
+            elif analysis_type == "Univariate Analysis":
+                univariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Bivariate Analysis":
+                bivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Multivariate Analysis":
+                multivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Subgroup Analysis":
+                subgroup_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Linear Regression":
+                linear_regression_analysis(filtered_df, num_list, cat_list)
 else:
     st.warning("Please upload a dataset to begin.")

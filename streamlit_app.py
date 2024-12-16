@@ -18,7 +18,6 @@ def save_chart_as_image(fig, filename="chart.png"):
     return buffer
 
 # Section: Data Cleaning and Descriptive Statistics
-# Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
     st.header("1. Data Cleaning")
 
@@ -155,7 +154,6 @@ def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
     
-    #Numerical
     if variable_type == "Numerical":
         col = st.selectbox("Select a numerical variable:", num_list)
         chart_type = st.selectbox(
@@ -164,27 +162,13 @@ def univariate_analysis(df, num_list, cat_list):
         )
         fig, ax = plt.subplots()
         
-        # Statistics for numerical columns
-        mean = df[col].mean()
-        median = df[col].median()
-        std_dev = df[col].std()
-        q1 = df[col].quantile(0.25)
-        q3 = df[col].quantile(0.75)
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-        num_outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)].shape[0]
-
         if chart_type == "Histogram":
             bins = st.slider("Number of bins:", min_value=5, max_value=50, value=20)
-            log_scale = st.checkbox("Log Scale (X-axis)")
             sns.histplot(df[col], bins=bins, kde=True, ax=ax)
-            if log_scale:
-                ax.set_xscale("log")
             ax.set_title(f"Histogram of {col}")
         elif chart_type == "Box Plot":
             sns.boxplot(x=df[col], ax=ax)
-            ax.set_title(f"Box Plot of {col} (Outliers: {num_outliers})")
+            ax.set_title(f"Box Plot of {col}")
         elif chart_type == "Density Plot":
             sns.kdeplot(df[col], fill=True, ax=ax)
             ax.set_title(f"Density Plot of {col}")
@@ -193,20 +177,12 @@ def univariate_analysis(df, num_list, cat_list):
             ax.set_title(f"QQ Plot of {col}")
         
         st.pyplot(fig)
-        st.write(
-            f"**Statistics for {col}:**\n"
-            f"- Mean: {mean:.2f}\n"
-            f"- Median: {median:.2f}\n"
-            f"- Standard Deviation: {std_dev:.2f}\n"
-            f"- Outliers (IQR method): {num_outliers}"
-        )
 
-    #Categorical
     elif variable_type == "Categorical":
         col = st.selectbox("Select a categorical variable:", cat_list)
         chart_type = st.selectbox(
             "Choose chart type:",
-            ["Count Plot", "Bar Chart", "Pie Chart", "Box Plot"]
+            ["Count Plot", "Bar Chart", "Pie Chart"]
         )
         fig, ax = plt.subplots()
         
@@ -222,21 +198,8 @@ def univariate_analysis(df, num_list, cat_list):
             )
             ax.set_ylabel("")
             ax.set_title(f"Pie Chart of {col}")
-        elif chart_type == "Box Plot":
-            num_col = st.selectbox("Select a numerical variable for Box Plot:", num_list)
-            sns.boxplot(x=col, y=num_col, data=df, ax=ax)
-            ax.set_title(f"Box Plot of {num_col} by {col}")
         
         st.pyplot(fig)
-        st.write(f"**Category Counts:**\n{df[col].value_counts()}")
-        # Add export option
-        buffer = save_chart_as_image(fig)
-        st.download_button(
-            label="Download Chart as PNG",
-            data=buffer,
-            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
-            mime="image/png"
-        )
         
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
@@ -611,8 +574,9 @@ st.title("Interactive EDA Application")
 uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel only):", type=["csv", "xlsx"])
 
 if uploaded_file:
-    file_extension = uploaded_file.name.split(".")[-1].lower()
     try:
+        # Handle File Type
+        file_extension = uploaded_file.name.split(".")[-1].lower()
         if file_extension == "csv":
             df = pd.read_csv(uploaded_file)
         elif file_extension == "xlsx":
@@ -630,20 +594,21 @@ if uploaded_file:
         st.write("### Dataset Preview")
         st.dataframe(df.head())
 
-        # Analysis Navigation
+        # Sidebar Navigation
         analysis_type = st.sidebar.radio(
             "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Linear Regression"]
+            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis"]
         )
 
         num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
         cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
 
+        # Perform Selected Analysis
         if analysis_type == "Data Cleaning & Descriptive":
             data_cleaning_and_descriptive(df)
         elif analysis_type == "Univariate Analysis":
             univariate_analysis(df, num_list, cat_list)
         elif analysis_type == "Bivariate Analysis":
             bivariate_analysis(df, num_list, cat_list)
-        elif analysis_type == "Linear Regression":
-            linear_regression_analysis(df, num_list)
+else:
+    st.warning("Please upload a dataset to begin.")

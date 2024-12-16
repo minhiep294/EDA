@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
-import numpy as np
 import statsmodels.api as sm
+
 
 # Helper Function: Save Chart as Image
 def save_chart_as_image(fig, filename="chart.png"):
@@ -29,13 +29,12 @@ def validate_dataframe(df):
         return False
     return True
 
-# Section: Data Cleaning and Descriptive Statistics
-# Function for data cleaning and descriptive stats
+
+# Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
     st.header("1. Data Cleaning")
-
     if not validate_dataframe(df):
-        return  # Exit function if DataFrame is invalid
+        return
 
     st.subheader("Handle Missing Values")
     missing_option = st.radio(
@@ -79,179 +78,52 @@ def data_cleaning_and_descriptive(df):
             st.write(f"Could not convert {col} to {col_type}: {e}")
     st.write("Data Cleaning Complete.")
     st.write(df.head())
+
     st.header("2. Descriptive Statistics")
     st.write(df.describe(include="all"))
 
-    # Section 2: Descriptive Statistics
-    st.header("2. Descriptive Statistics")
-    st.write(df.describe(include="all"))
-
-# Dynamic Filter Function
-def filter_data(df):
-    st.sidebar.title("Filter Data")
-    filters = {}
-    filter_container = st.sidebar.container()
-    with filter_container:
-        # Add new filter dynamically
-        add_filter_button = st.button("Add New Filter")
-        if "filter_count" not in st.session_state:
-            st.session_state.filter_count = 0
-
-        if add_filter_button:
-            st.session_state.filter_count += 1
-
-        # Manage filters dynamically
-        for i in range(st.session_state.filter_count):
-            with st.expander(f"Filter {i+1}", expanded=True):
-                col_name = st.selectbox(
-                    f"Select Column for Filter {i+1}",
-                    df.columns,
-                    key=f"filter_col_{i}",
-                )
-                if pd.api.types.is_numeric_dtype(df[col_name]):
-                    min_val = int(df[col_name].min())  # Convert to integer
-                    max_val = int(df[col_name].max())  # Convert to integer
-                    selected_range = st.slider(
-                        f"Select range for {col_name}",
-                        min_value=min_val,
-                        max_value=max_val,
-                        value=(min_val, max_val),
-                        key=f"filter_slider_{i}",
-                    )
-                    filters[col_name] = ("range", selected_range)
-                elif pd.api.types.is_string_dtype(df[col_name]):
-                    unique_values = df[col_name].unique().tolist()
-                    selected_values = st.multiselect(
-                        f"Select categories for {col_name}",
-                        options=unique_values,
-                        default=unique_values,
-                        key=f"filter_multiselect_{i}",
-                    )
-                    filters[col_name] = ("categories", selected_values)
-                elif pd.api.types.is_datetime64_any_dtype(df[col_name]):
-                    min_date = df[col_name].min()
-                    max_date = df[col_name].max()
-                    selected_dates = st.date_input(
-                        f"Select date range for {col_name}",
-                        value=(min_date, max_date),
-                        key=f"filter_date_{i}",
-                    )
-                    filters[col_name] = ("dates", selected_dates)
-
-                # Remove filter
-                remove_filter = st.button(f"Remove Filter {i+1}", key=f"remove_filter_{i}")
-                if remove_filter:
-                    del st.session_state[f"filter_col_{i}"]
-                    del st.session_state[f"filter_slider_{i}"]
-                    del st.session_state[f"filter_multiselect_{i}"]
-                    del st.session_state[f"filter_date_{i}"]
-                    st.session_state.filter_count -= 1
-                    break
-
-    # Apply filters to the dataset
-    filtered_df = df.copy()
-    for col, (filter_type, value) in filters.items():
-        if filter_type == "range":
-            filtered_df = filtered_df[
-                (filtered_df[col] >= value[0]) & (filtered_df[col] <= value[1])
-            ]
-        elif filter_type == "categories":
-            filtered_df = filtered_df[filtered_df[col].isin(value)]
-        elif filter_type == "dates":
-            filtered_df = filtered_df[
-                (filtered_df[col] >= pd.to_datetime(value[0]))
-                & (filtered_df[col] <= pd.to_datetime(value[1]))
-            ]
-
-    return filtered_df
 
 # Univariate Analysis
 def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
-    
-    #Numerical
+
     if variable_type == "Numerical":
         col = st.selectbox("Select a numerical variable:", num_list)
         chart_type = st.selectbox(
             "Choose chart type:",
-            ["Histogram", "Box Plot", "Density Plot", "QQ Plot"]
+            ["Histogram", "Box Plot", "Density Plot", "QQ Plot"],
         )
         fig, ax = plt.subplots()
-        
-        # Statistics for numerical columns
-        mean = df[col].mean()
-        median = df[col].median()
-        std_dev = df[col].std()
-        q1 = df[col].quantile(0.25)
-        q3 = df[col].quantile(0.75)
-        iqr = q3 - q1
-        lower_bound = q1 - 1.5 * iqr
-        upper_bound = q3 + 1.5 * iqr
-        num_outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)].shape[0]
 
         if chart_type == "Histogram":
-            bins = st.slider("Number of bins:", min_value=5, max_value=50, value=20)
-            log_scale = st.checkbox("Log Scale (X-axis)")
-            sns.histplot(df[col], bins=bins, kde=True, ax=ax)
-            if log_scale:
-                ax.set_xscale("log")
+            sns.histplot(df[col], kde=True, ax=ax)
             ax.set_title(f"Histogram of {col}")
         elif chart_type == "Box Plot":
             sns.boxplot(x=df[col], ax=ax)
-            ax.set_title(f"Box Plot of {col} (Outliers: {num_outliers})")
+            ax.set_title(f"Box Plot of {col}")
         elif chart_type == "Density Plot":
             sns.kdeplot(df[col], fill=True, ax=ax)
             ax.set_title(f"Density Plot of {col}")
         elif chart_type == "QQ Plot":
             stats.probplot(df[col], dist="norm", plot=ax)
             ax.set_title(f"QQ Plot of {col}")
-        
-        st.pyplot(fig)
-        st.write(
-            f"**Statistics for {col}:**\n"
-            f"- Mean: {mean:.2f}\n"
-            f"- Median: {median:.2f}\n"
-            f"- Standard Deviation: {std_dev:.2f}\n"
-            f"- Outliers (IQR method): {num_outliers}"
-        )
 
-    #Categorical
+        st.pyplot(fig)
+
     elif variable_type == "Categorical":
         col = st.selectbox("Select a categorical variable:", cat_list)
-        chart_type = st.selectbox(
-            "Choose chart type:",
-            ["Count Plot", "Bar Chart", "Pie Chart", "Box Plot"]
-        )
+        chart_type = st.selectbox("Choose chart type:", ["Count Plot", "Bar Chart"])
         fig, ax = plt.subplots()
-        
+
         if chart_type == "Count Plot":
             sns.countplot(x=col, data=df, ax=ax)
             ax.set_title(f"Count Plot of {col}")
         elif chart_type == "Bar Chart":
             df[col].value_counts().plot.bar(ax=ax)
             ax.set_title(f"Bar Chart of {col}")
-        elif chart_type == "Pie Chart":
-            df[col].value_counts().plot.pie(
-                autopct="%1.1f%%", startangle=90, ax=ax
-            )
-            ax.set_ylabel("")
-            ax.set_title(f"Pie Chart of {col}")
-        elif chart_type == "Box Plot":
-            num_col = st.selectbox("Select a numerical variable for Box Plot:", num_list)
-            sns.boxplot(x=col, y=num_col, data=df, ax=ax)
-            ax.set_title(f"Box Plot of {num_col} by {col}")
-        
+
         st.pyplot(fig)
-        st.write(f"**Category Counts:**\n{df[col].value_counts()}")
-        # Add export option
-        buffer = save_chart_as_image(fig)
-        st.download_button(
-            label="Download Chart as PNG",
-            data=buffer,
-            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
-            mime="image/png"
-        )
         
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):

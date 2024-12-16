@@ -262,313 +262,228 @@ def bivariate_analysis(df, num_list, cat_list):
             mime="image/png"
         )            
         
-#Multivariable Analysis
+# Multivariate Analysis
 def multivariate_analysis(df, num_list, cat_list):
     st.subheader("Multivariate Analysis")
-    
-    # Allow user to select chart type
+
     chart_type = st.selectbox("Choose chart type:", 
                               ["Pair Plot", "Correlation Matrix", "Grouped Bar Chart", "Bubble Chart", "Heat Map"])
     
-    # Pair Plot
     if chart_type == "Pair Plot":
-        # Allow user to select numerical variables for the pair plot
-        selected_vars = st.multiselect(
-            "Select numerical variables to include in the pair plot:",
-            options=num_list,
-            default=num_list  # By default, select all numerical variables
-        )
-        
-        # Optional Hue (categorical variable)
+        selected_vars = st.multiselect("Select numerical variables for Pair Plot:", num_list, default=num_list)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
-        
-        # Generate Pair Plot
-        if not selected_vars:
-            st.warning("Please select at least one variable for the pair plot.")
-        else:
-            pairplot_fig = sns.pairplot(df[selected_vars], hue=None if hue == "None" else hue)
-            st.pyplot(pairplot_fig)
+        if selected_vars:
+            try:
+                pairplot_fig = sns.pairplot(df[selected_vars], hue=None if hue == "None" else hue)
+                st.pyplot(pairplot_fig)
+            except Exception as e:
+                st.error(f"Error generating Pair Plot: {e}")
 
-    # Correlation Matrix
     elif chart_type == "Correlation Matrix":
-        selected_vars = st.multiselect(
-            "Select numerical variables to include in the correlation matrix:",
-            options=num_list,
-            default=num_list  # By default, select all numerical variables
-        )
-        if not selected_vars:
-            st.warning("Please select at least one variable.")
-        else:
+        selected_vars = st.multiselect("Select numerical variables:", num_list, default=num_list)
+        if len(selected_vars) >= 2:
             fig, ax = plt.subplots(figsize=(10, 8))
             corr_matrix = df[selected_vars].corr()
             sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
-            ax.set_title("Correlation Matrix")
             st.pyplot(fig)
-    
-    # Grouped Bar Chart
+        else:
+            st.warning("Select at least two numerical variables for correlation analysis.")
+
     elif chart_type == "Grouped Bar Chart":
-        x = st.selectbox("Select X-axis Variable (categorical):", cat_list)
+        x = st.selectbox("Select X-axis (categorical):", cat_list)
         hue = st.selectbox("Select Grouping Variable (categorical):", cat_list)
-        fig, ax = plt.subplots()
-        sns.countplot(x=x, hue=hue, data=df, ax=ax)
-        ax.set_title(f"Grouped Bar Chart: {x} grouped by {hue}")
-        st.pyplot(fig)
+        try:
+            fig, ax = plt.subplots()
+            sns.countplot(x=x, hue=hue, data=df, ax=ax)
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Error generating Grouped Bar Chart: {e}")
 
-    # Bubble Chart
     elif chart_type == "Bubble Chart":
-        x = st.selectbox("Select X-axis Variable (numerical):", num_list)
-        y = st.selectbox("Select Y-axis Variable (numerical):", num_list)
-        size = st.selectbox("Select Bubble Size Variable (numerical):", num_list)
-        color = st.selectbox("Select Bubble Color Variable (categorical):", ["None"] + cat_list)
-        fig, ax = plt.subplots()
-        sns.scatterplot(data=df, x=x, y=y, size=size, hue=None if color == "None" else color, sizes=(20, 200), ax=ax)
-        ax.set_title(f"Bubble Chart: {x} vs {y} (Size: {size})")
-        st.pyplot(fig)
-    
-    # Heat Map
-    elif chart_type == "Heat Map":
-        x = st.selectbox("Select X-axis Variable (categorical):", cat_list)
-        y = st.selectbox("Select Y-axis Variable (categorical):", cat_list)
-        value = st.selectbox("Select Value Variable (numerical):", num_list)
-        pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
-        fig, ax = plt.subplots()
-        sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
-        ax.set_title(f"Heat Map: {value} by {x} and {y}")
-        st.pyplot(fig)
-        # Add export option
-        buffer = save_chart_as_image(fig)
-        st.download_button(
-            label="Download Chart as PNG",
-            data=buffer,
-            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
-            mime="image/png"
-        )
+        x = st.selectbox("Select X-axis (numerical):", num_list)
+        y = st.selectbox("Select Y-axis (numerical):", num_list)
+        size = st.selectbox("Select Bubble Size (numerical):", num_list)
+        color = st.selectbox("Select Bubble Color (categorical):", ["None"] + cat_list)
+        try:
+            fig, ax = plt.subplots()
+            sns.scatterplot(data=df, x=x, y=y, size=size, hue=None if color == "None" else color, sizes=(20, 200), ax=ax)
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Error generating Bubble Chart: {e}")
 
+    elif chart_type == "Heat Map":
+        x = st.selectbox("Select X-axis (categorical):", cat_list)
+        y = st.selectbox("Select Y-axis (categorical):", cat_list)
+        value = st.selectbox("Select Value (numerical):", num_list)
+        try:
+            pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
+            fig, ax = plt.subplots()
+            sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Error generating Heat Map: {e}")
+
+# Subgroup Analysis
 def subgroup_analysis(df, num_list, cat_list):
-    st.header("Subgroup Analysis")
+    st.subheader("Subgroup Analysis")
 
     # Select Numerical and Categorical Variables
-    st.markdown("### Select Variables for Subgroup Analysis")
-    numerical_col = st.selectbox("Select Numerical Variable:", num_list)
-    categorical_col = st.selectbox("Select Categorical Variable:", cat_list)
+    num_col = st.selectbox("Select Numerical Variable:", num_list)
+    cat_col = st.selectbox("Select Categorical Variable:", cat_list)
 
-    # Allow user to choose the type of plot(s)
-    st.markdown("### Choose the Chart Type(s)")
-    chart_types = st.multiselect(
-        "Select the chart type(s) you want to generate:",
-        ["Box Plot", "Bar Chart"]
-    )
+    # Allow user to choose chart types
+    chart_types = st.multiselect("Select Charts to Generate:", ["Box Plot", "Bar Chart", "Pie Chart"])
 
-    # Check if categorical_col is categorical, if not, convert it
-    if not pd.api.types.is_categorical_dtype(df[categorical_col]):
-        df[categorical_col] = df[categorical_col].astype("category")
-
-    # Handle empty selection
-    if not chart_types:
-        st.warning("Please select at least one chart type to generate.")
-        return
-
-    # Generate Bar Chart if selected
-    if "Bar Chart" in chart_types:
-        st.markdown("#### Bar Chart")
-
-        # Let user select the metric(s) to visualize
-        selected_metrics = st.multiselect(
-            "Choose the metric(s) for the bar chart:",
-            ["Mean", "Sum", "Standard Deviation"]
-        )
-
-        # Handle case where no metric is selected
-        if not selected_metrics:
-            st.warning("Please select at least one metric for the bar chart.")
-            return
-
-        # Calculate requested statistics
-        metrics_map = {
-            "Mean": "mean",
-            "Sum": "sum",
-            "Standard Deviation": "std"
-        }
-        selected_agg_funcs = [metrics_map[metric] for metric in selected_metrics]
-        grouped = df.groupby(categorical_col)[numerical_col].agg(selected_agg_funcs).reset_index()
-
-        # Generate bar charts for each selected metric
-        for metric in selected_metrics:
-            agg_func = metrics_map[metric]
-            fig_bar, ax_bar = plt.subplots(figsize=(12, 6))
-            sns.barplot(data=grouped, x=categorical_col, y=agg_func, ax=ax_bar)
-            ax_bar.set_title(f"{metric} of {numerical_col} by {categorical_col}")
-            ax_bar.set_xlabel(categorical_col)
-            ax_bar.set_ylabel(metric)
-            st.pyplot(fig_bar)
-
-            # Add download button for each bar chart
-            buffer_bar = save_chart_as_image(fig_bar)
-            st.download_button(
-                label=f"Download {metric} Bar Chart as PNG",
-                data=buffer_bar,
-                file_name=f"bar_chart_{agg_func}_{numerical_col}_by_{categorical_col}.png",
-                mime="image/png",
-            )
-
-    # Generate Box Plot if selected
+    # Box Plot
     if "Box Plot" in chart_types:
-        st.markdown("#### Box Plot")
-        fig_box, ax_box = plt.subplots(figsize=(12, 6))
-        sns.boxplot(data=df, x=categorical_col, y=numerical_col, ax=ax_box)
-        ax_box.set_title(f"Box Plot of {numerical_col} by {categorical_col}")
-        ax_box.set_xlabel(categorical_col)
-        ax_box.set_ylabel(numerical_col)
-        st.pyplot(fig_box)
+        try:
+            st.markdown("### Box Plot")
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.boxplot(x=cat_col, y=num_col, data=df, ax=ax)
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Error generating Box Plot: {e}")
 
-        # Add download button for box plot
-        buffer_box = save_chart_as_image(fig_box)
-        st.download_button(
-            label="Download Box Plot as PNG",
-            data=buffer_box,
-            file_name=f"box_plot_{numerical_col}_by_{categorical_col}.png",
-            mime="image/png",
-        )
+    # Bar Chart
+    if "Bar Chart" in chart_types:
+        st.markdown("### Bar Chart")
+        agg_funcs = st.multiselect("Select Metrics for Bar Chart:", ["mean", "sum", "count"], default=["mean"])
 
-# Helper function to save charts as images
-def save_chart_as_image(fig):
-    from io import BytesIO
-    buffer = BytesIO()
-    fig.savefig(buffer, format="png")
-    buffer.seek(0)
-    return buffer
-    
-# Linear Regression Section
+        try:
+            grouped = df.groupby(cat_col)[num_col].agg(agg_funcs).reset_index()
+            for func in agg_funcs:
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sns.barplot(x=cat_col, y=func, data=grouped, ci=None, ax=ax)
+                ax.set_title(f"{func.capitalize()} of {num_col} by {cat_col}")
+                st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Error generating Bar Chart: {e}")
+
+    # Pie Chart
+    if "Pie Chart" in chart_types:
+        st.markdown("### Pie Charts")
+        agg_func = st.selectbox("Select Aggregation for Pie Chart:", ["mean", "sum", "count"], index=0)
+        
+        try:
+            grouped = df.groupby(cat_col)[num_col].agg(agg_func).reset_index()
+            grouped = grouped.sort_values(by=num_col, ascending=False)
+
+            # Create multiple pie charts dynamically
+            for idx, row in grouped.iterrows():
+                fig, ax = plt.subplots()
+                ax.pie(
+                    row[[num_col]],
+                    labels=[f"{cat_col}: {row[cat_col]}"],
+                    autopct="%1.1f%%",
+                    startangle=90
+                )
+                ax.set_title(f"Pie Chart: {agg_func.capitalize()} of {num_col} for {row[cat_col]}")
+                st.pyplot(fig)
+
+        except Exception as e:
+            st.error(f"Error generating Pie Charts: {e}")
+
+
+# Linear Regression Analysis
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 
-    # Choose between Simple and Multiple Linear Regression
-    regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
+    # Choose Regression Type
+    regression_type = st.radio("Select Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
         st.markdown("### Simple Linear Regression")
-        x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
-        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+        x = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
+        y = st.selectbox("Select Dependent Variable (Y):", num_list)
 
-        if x_col and y_col:
+        if x and y:
             try:
-                # Prepare data
-                if x_col in cat_list:  # If X is categorical, convert to dummy variables
-                    X = pd.get_dummies(df[x_col], drop_first=True)
+                # Prepare X and y
+                if x in cat_list:  # Convert categorical variable to dummy variables
+                    X = pd.get_dummies(df[x], drop_first=True)
                 else:
-                    X = df[[x_col]]  # Independent variable
-                
-                y = df[y_col]  # Dependent variable
-                
-                # Combine and drop missing values
-                combined_data = pd.concat([X, y], axis=1).dropna()
-                X = combined_data.iloc[:, :-1]
-                y = combined_data.iloc[:, -1]
+                    X = df[[x]]
+                X = sm.add_constant(X)  # Add constant for intercept
 
-                # Ensure data contains no invalid values
-                if not np.isfinite(X.values).all() or not np.isfinite(y.values).all():
-                    st.error("The data contains invalid values (e.g., NaN or Infinity). Please clean your dataset.")
-                    return
+                y_values = df[y]
 
-                # Fit the model
-                model = LinearRegression()
-                model.fit(X, y)
-
-                # Get predictions and metrics
-                y_pred = model.predict(X)
-                r2 = r2_score(y, y_pred)
-                intercept = model.intercept_
-
-                # Prepare coefficients table
-                coef_df = pd.DataFrame({
-                    "Variable": ["Intercept"] + list(X.columns),
-                    "Coefficient": [intercept] + list(model.coef_)
-                })
+                # Fit the regression model
+                model = sm.OLS(y_values, X).fit()
                 st.markdown("### Regression Results")
-                st.markdown("#### Model Coefficients")
-                st.table(coef_df)
+                st.write(model.summary())
 
-                # Model metrics
-                results_df = pd.DataFrame({
-                    "Metric": ["R-squared"],
-                    "Value": [r2]
+                # Display Coefficients and Confidence Intervals
+                st.markdown("#### Coefficients and Confidence Intervals")
+                coef_df = pd.DataFrame({
+                    "Coefficient": model.params,
+                    "P-Value": model.pvalues,
+                    "T-Statistic": model.tvalues,
+                    "Lower CI": model.conf_int()[0],
+                    "Upper CI": model.conf_int()[1]
                 })
-                st.markdown("#### Model Metrics")
-                st.table(results_df)
+                st.dataframe(coef_df)
+
+                # Export as CSV
+                csv_data = coef_df.to_csv(index=True).encode('utf-8')
+                st.download_button("Download Results as CSV", data=csv_data, file_name="simple_regression_results.csv", mime="text/csv")
 
                 # Residuals plot
-                residuals = y - y_pred
+                st.markdown("#### Residuals Plot")
                 fig, ax = plt.subplots()
-                sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-                ax.set_title("Residuals Plot")
-                ax.set_xlabel("Predicted Values")
+                sns.residplot(x=model.fittedvalues, y=model.resid, lowess=True, line_kws={"color": "red", "lw": 2}, ax=ax)
+                ax.set_xlabel("Fitted Values")
                 ax.set_ylabel("Residuals")
+                ax.set_title("Residuals vs Fitted Values")
                 st.pyplot(fig)
+
             except Exception as e:
-                st.error(f"An error occurred during Simple Linear Regression: {e}")
+                st.error(f"Error during regression analysis: {e}")
 
     elif regression_type == "Multiple Regression":
         st.markdown("### Multiple Linear Regression")
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
-        y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+        y = st.selectbox("Select Dependent Variable (Y):", num_list)
 
-        if x_cols and y_col:
+        if x_cols and y:
             try:
-                # Prepare data
+                # Prepare X and y
                 X = df[x_cols]
+                X = pd.get_dummies(X, drop_first=True)  # Convert categorical variables to dummies
+                X = sm.add_constant(X)  # Add constant for intercept
 
-                # Convert categorical variables to dummy variables
-                X = pd.get_dummies(X, drop_first=True)
-                y = df[y_col]
+                y_values = df[y]
 
-                # Combine and drop missing values
-                combined_data = pd.concat([X, y], axis=1).dropna()
-                X = combined_data.iloc[:, :-1]
-                y = combined_data.iloc[:, -1]
-
-                # Ensure data contains no invalid values
-                if not np.isfinite(X.values).all() or not np.isfinite(y.values).all():
-                    st.error("The data contains invalid values (e.g., NaN or Infinity). Please clean your dataset.")
-                    return
-
-                # Fit the model
-                model = LinearRegression()
-                model.fit(X, y)
-
-                # Get predictions and metrics
-                y_pred = model.predict(X)
-                r2 = r2_score(y, y_pred)
-                mse = mean_squared_error(y, y_pred)
-                adj_r2 = 1 - (1 - r2) * (len(y) - 1) / (len(y) - X.shape[1] - 1)
-
-                # Prepare coefficients table
-                coef_df = pd.DataFrame({
-                    "Variable": ["Intercept"] + list(X.columns),
-                    "Coefficient": [model.intercept_] + list(model.coef_)
-                })
+                # Fit the regression model
+                model = sm.OLS(y_values, X).fit()
                 st.markdown("### Regression Results")
-                st.markdown("#### Model Coefficients")
-                st.table(coef_df)
+                st.write(model.summary())
 
-                # Model metrics
-                metrics_df = pd.DataFrame({
-                    "Metric": ["R-squared", "Adjusted R-squared", "Mean Squared Error (MSE)"],
-                    "Value": [r2, adj_r2, mse]
+                # Display Coefficients and Confidence Intervals
+                st.markdown("#### Coefficients and Confidence Intervals")
+                coef_df = pd.DataFrame({
+                    "Coefficient": model.params,
+                    "P-Value": model.pvalues,
+                    "T-Statistic": model.tvalues,
+                    "Lower CI": model.conf_int()[0],
+                    "Upper CI": model.conf_int()[1]
                 })
-                st.markdown("#### Model Metrics")
-                st.table(metrics_df)
+                st.dataframe(coef_df)
+
+                # Export as CSV
+                csv_data = coef_df.to_csv(index=True).encode('utf-8')
+                st.download_button("Download Results as CSV", data=csv_data, file_name="multiple_regression_results.csv", mime="text/csv")
 
                 # Residuals plot
-                residuals = y - y_pred
+                st.markdown("#### Residuals Plot")
                 fig, ax = plt.subplots()
-                sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-                ax.set_title("Residuals Plot")
-                ax.set_xlabel("Predicted Values")
+                sns.residplot(x=model.fittedvalues, y=model.resid, lowess=True, line_kws={"color": "red", "lw": 2}, ax=ax)
+                ax.set_xlabel("Fitted Values")
                 ax.set_ylabel("Residuals")
+                ax.set_title("Residuals vs Fitted Values")
                 st.pyplot(fig)
+
             except Exception as e:
-                st.error(f"An error occurred during Multiple Linear Regression: {e}")
-                
+                st.error(f"Error during regression analysis: {e}")
 # Main App
 st.title("Interactive EDA Application")
 

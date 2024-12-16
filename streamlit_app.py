@@ -501,7 +501,6 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x_col and y_col:
             try:
-                # Prepare data
                 if x_col in cat_list:
                     X = pd.get_dummies(df[x_col], drop_first=True)
                 else:
@@ -519,7 +518,7 @@ def linear_regression_analysis(df, num_list, cat_list):
                 # Fit the model
                 model = sm.OLS(y, X).fit()
 
-                # Display regression results
+                # Display results
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
 
@@ -542,7 +541,6 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x_cols and y_col:
             try:
-                # Prepare data
                 X = pd.get_dummies(df[x_cols], drop_first=True)
                 y = df[y_col]
 
@@ -557,7 +555,7 @@ def linear_regression_analysis(df, num_list, cat_list):
                 # Fit the model
                 model = sm.OLS(y, X).fit()
 
-                # Display regression results
+                # Display results
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
 
@@ -573,8 +571,6 @@ def linear_regression_analysis(df, num_list, cat_list):
 
             except Exception as e:
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
-
-# Main App
                 
 # Main App
 # Helper function for dataset filtering

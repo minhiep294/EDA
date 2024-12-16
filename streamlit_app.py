@@ -452,6 +452,7 @@ def linear_regression_analysis(df, num_list, cat_list):
 def main():
     st.title("Interactive EDA and Regression App")
 
+    # File uploader
     uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
     if uploaded_file:
         try:
@@ -468,6 +469,14 @@ def main():
             if df.empty:
                 st.error("The uploaded file is empty. Please check the file.")
                 return
+
+            # Identify numerical and categorical columns
+            num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+            cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
+
+            # Debugging: Ensure the column lists are populated
+            st.write("Numerical Columns: ", num_list)
+            st.write("Categorical Columns: ", cat_list)
 
             # Sidebar Navigation
             st.sidebar.title("Navigation")
@@ -488,12 +497,17 @@ def main():
                 bivariate_analysis(df, num_list, cat_list)
             elif analysis_type == "Multivariate Analysis":
                 st.write("Debug: Running Multivariate Analysis")
-                multivariate_analysis(df, num_list)
+                multivariate_analysis(df, num_list, cat_list)
             elif analysis_type == "Linear Regression":
                 st.write("Debug: Running Linear Regression")
-                linear_regression_analysis(df, num_list)
+                linear_regression_analysis(df, num_list, cat_list)
 
         except Exception as e:
             st.error(f"An error occurred: {e}")
+            st.exception(e)
     else:
         st.warning("Please upload a file to proceed.")
+
+
+if __name__ == "__main__":
+    main()

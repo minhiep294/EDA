@@ -646,35 +646,155 @@ def linear_regression_analysis(df, num_list, cat_list):
 
                 
 # Main App
-st.title("Interactive EDA and Regression Application")
-uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel only):", type=["csv", "xlsx"])
-if uploaded_file:
-    file_extension = uploaded_file.name.split(".")[-1].lower()
-    try:
-        if file_extension == "csv":
-            df = pd.read_csv(uploaded_file)
-        elif file_extension == "xlsx":
-            df = pd.read_excel(uploaded_file, engine="openpyxl")
-        else:
-            st.error("Unsupported file type. Please upload a CSV or Excel file.")
-            df = None
-    except Exception as e:
-        st.error(f"Error reading the file: {e}")
-        df = None
-    if df is not None and not df.empty:
-        st.write("### Dataset Preview:")
-        st.dataframe(df.head())
-        num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
-        cat_list = [col for col in df.columns if pd.api.types.is_object_dtype(df[col])]
-        analysis_type = st.radio(
-            "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Linear Regression"]
-        )
-        if analysis_type == "Data Cleaning & Descriptive":
-            data_cleaning_and_descriptive(df)
-        elif analysis_type == "Linear Regression":
-            linear_regression_analysis(df, num_list, cat_list)
+# Helper function for dataset filtering
+def filter_data(df):
+    st.sidebar.title("Filter Data")
+    filters = {}
+    filter_container = st.sidebar.container()
+    with filter_container:
+        add_filter_button = st.button("Add New Filter")
+        if "filter_count" not in st.session_state:
+            st.session_state.filter_count = 0
+
+        if add_filter_button:
+            st.session_state.filter_count += 1
+
+        # Manage filters dynamically
+        for i in range(st.session_state.filter_count):
+            with st.expander(f"Filter {i+1}", expanded=True):
+                col_name = st.selectbox(
+                    f"Select Column for Filter {i+1}",
+                    df.columns,
+                    key=f"filter_col_{i}",
+                )
+                if pd.api.types.is_numeric_dtype(df[col_name]):
+                    min_val = int(df[col_name].min())
+                    max_val = int(df[col_name].max())
+                    selected_range = st.slider(
+                        f"Select range for {col_name}",
+                        min_value=min_val,
+                        max_value=max_val,
+                        value=(min_val, max_val),
+                        key=f"filter_slider_{i}",
+                    )
+                    filters[col_name] = ("range", selected_range)
+                elif pd.api.types.is_string_dtype(df[col_name]):
+                    unique_values = df[col_name].unique().tolist()
+                    selected_values = st.multiselect(
+                        f"Select categories for {col_name}",
+                        options=unique_values,
+                        default=unique_values,
+                        key=f"filter_multiselect_{i}",
+                    )
+                    filters[col_name] = ("categories", selected_values)
+                elif pd.api.types.is_datetime64_any_dtype(df[col_name]):
+                    min_date = df[col_name].min()
+                    max_date = df[col_name].max()
+                    selected_dates = st.date_input(
+                        f"Select date range for {col_name}",
+                        value=(min_date, max_date),
+                        key=f"filter_date_{i}",
+                    )
+                    filters[col_name] = ("dates", selected_dates)
+
+    # Apply filters to the dataset
+    filtered_df = df.copy()
+    for col, (filter_type, value) in filters.items():
+        if filter_type == "range":
+            filtered_df = filtered_df[
+                (filtered_df[col] >= value[0]) & (filtered_df[col] <= value[1])
+            ]
+        elif filter_type == "categories":
+            filtered_df = filtered_df[filtered_df[col].isin(value)]
+        elif filter_type == "dates":
+            filtered_df = filtered_df[
+                (filtered_df[col] >= pd.to_datetime(value[0]))
+                & (filtered_df[col] <= pd.to_datetime(value[1]))
+            ]
+    return filtered_df
+
+# Data cleaning and descriptive statistics
+def data_cleaning_and_descriptive(df):
+    st.header("1. Data Cleaning")
+    st.write("Data Cleaning not implemented in this demo.")
+
+# Other analysis placeholders
+def univariate_analysis(df, num_list, cat_list):
+    st.write("Univariate Analysis not implemented.")
+
+def bivariate_analysis(df, num_list, cat_list):
+    st.write("Bivariate Analysis not implemented.")
+
+def multivariate_analysis(df, num_list, cat_list):
+    st.write("Multivariate Analysis not implemented.")
+
+def subgroup_analysis(df, num_list, cat_list):
+    st.write("Subgroup Analysis not implemented.")
+
+def linear_regression_analysis(df, num_list, cat_list):
+    st.write("Linear Regression not implemented.")
+
+# Main App
+def main():
+    st.title("Interactive EDA and Regression App")
+    uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
+
+    if uploaded_file:
+        file_extension = uploaded_file.name.split(".")[-1].lower()
+
+        try:
+            if file_extension == "csv":
+                df = pd.read_csv(uploaded_file)
+            elif file_extension == "xlsx":
+                df = pd.read_excel(uploaded_file, engine="openpyxl")
+            else:
+                st.error("Unsupported file type. Please upload a CSV or Excel file.")
+                return
+
+            if df.empty:
+                st.error("The uploaded file is empty. Please check the file.")
+                return
+
+            # Dataset preview
+            st.write("### Dataset Preview:")
+            st.dataframe(df.head())
+
+            # Filter the dataset
+            filtered_df = filter_data(df)
+
+            st.write("### Filtered Dataset:")
+            st.dataframe(filtered_df)
+
+            # Identify numerical and categorical columns
+            num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
+            cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
+
+            # Sidebar Navigation
+            st.sidebar.title("Navigation")
+            analysis_type = st.sidebar.radio(
+                "Choose Analysis Type:",
+                ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
+            )
+
+            # Navigate based on analysis type
+            if analysis_type == "Data Cleaning & Descriptive":
+                data_cleaning_and_descriptive(filtered_df)
+            elif analysis_type == "Univariate Analysis":
+                univariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Bivariate Analysis":
+                bivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Multivariate Analysis":
+                multivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Linear Regression":
+                linear_regression_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Subgroup Analysis":
+                subgroup_analysis(filtered_df, num_list, cat_list)
+
+        except Exception as e:
+            st.error("An error occurred while processing the file.")
+            st.write(f"Error details: {e}")
     else:
-        st.error("The uploaded file is empty or invalid. Please check your data.")
-else:
-    st.warning("No file uploaded yet. Please upload a file.")
+        st.warning("Please upload a file to proceed.")
+
+if __name__ == "__main__":
+    main()

@@ -629,18 +629,62 @@ def main():
                 st.error("Unsupported file format. Please upload a CSV or Excel file.")
                 return
 
+            # Debugging output for file details
+            st.write(f"Uploaded file: {uploaded_file.name}")
+            st.write(f"DataFrame shape: {df.shape if isinstance(df, pd.DataFrame) else 'Not a DataFrame'}")
+
             # Check if DataFrame is empty
             if df.empty:
                 try:
                     st.error("The uploaded dataset is empty.")
                 except AttributeError as e:
-                    st.write(f"Debug: AttributeError while calling st.error: {e}")
+                    st.write(f"Debug: AttributeError when calling st.error: {e}")
                     raise
                 return
 
             # Dataset preview
             st.write("### Dataset Preview")
             st.dataframe(df.head())
+
+        except Exception as e:
+            st.error(f"An unexpected error occurred: {e}")
+            st.exception(e)
+    else:
+        st.warning("Please upload a file to proceed.")
+
+            # Process filtering
+            try:
+                filtered_df = filter_data(df)
+                st.write("### Filtered Dataset")
+                st.dataframe(filtered_df)
+            except AttributeError as e:
+                st.error(f"An error occurred while filtering the data: {e}")
+                return
+            
+            # Identify numerical and categorical columns
+            num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
+            cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
+
+            # Analysis Navigation
+            st.sidebar.title("Navigation")
+            analysis_type = st.sidebar.radio(
+                "Choose Analysis Type:",
+                ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
+            )
+
+            # Route to the selected analysis
+            if analysis_type == "Data Cleaning & Descriptive":
+                data_cleaning_and_descriptive(filtered_df)
+            elif analysis_type == "Univariate Analysis":
+                univariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Bivariate Analysis":
+                bivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Multivariate Analysis":
+                multivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Subgroup Analysis":
+                subgroup_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Linear Regression":
+                linear_regression_analysis(filtered_df, num_list, cat_list)
 
         except Exception as e:
             st.error(f"An unexpected error occurred: {e}")

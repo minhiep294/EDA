@@ -570,35 +570,49 @@ def linear_regression_analysis(df, num_list, cat_list):
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
                 
 # Main App
-st.title("Interactive EDA Application")
-uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel only):", type=["csv", "xlsx"])
+elif choice == "Upload Your Data":
+    st.subheader("Upload Data File")
+    uploaded_file = st.file_uploader("Choose a file to upload", type=["csv", "xlsx"])
 
-if uploaded_file:
-    try:
-        # Handle File Type
-        file_extension = uploaded_file.name.split(".")[-1].lower()
-        if file_extension == "csv":
-            df = pd.read_csv(uploaded_file)
-        elif file_extension == "xlsx":
-            sheet_names = pd.ExcelFile(uploaded_file).sheet_names
-            selected_sheet = st.selectbox("Select sheet to load", sheet_names)
-            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
-        else:
-            st.error("Unsupported file type.")
-            df = None
-    except Exception as e:
-        st.error(f"Error reading file: {e}")
-        df = None
+    if uploaded_file is not None:
+        # Read data from the uploaded file
+        try:
+            if uploaded_file.name.endswith(".csv"):
+                data = pd.read_csv(uploaded_file, encoding="utf-8")
+            else:
+                data = pd.read_excel(uploaded_file, engine="openpyxl")
+            st.success("File successfully uploaded!")
+        except Exception as e:
+            st.error(f"An error occurred: {e}")
+            data = None
 
-    if df is not None:
-        st.write("### Dataset Preview")
-        st.dataframe(df.head())
+        if data is not None:
+            st.write("Uploaded Dataset Preview:")
+            st.dataframe(data)
 
-        # Sidebar Navigation
-        analysis_type = st.sidebar.radio(
-            "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis"]
+            # Sidebar for analysis options
+            st.sidebar.header("Select Analysis Option")
+            analysis_option = st.sidebar.selectbox("Choose analysis type", ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis"]
         )
+
+            # General filtering with multiple options
+            filter_col = st.sidebar.selectbox("Filter by Column", ["None"] + data.columns.tolist())
+            if filter_col != "None":
+                if pd.api.types.is_numeric_dtype(data[filter_col]):
+                    min_val, max_val = st.sidebar.slider(
+                        f"Select range for {filter_col}",
+                        float(data[filter_col].min()),
+                        float(data[filter_col].max()),
+                        (float(data[filter_col].min()), float(data[filter_col].max()))
+                    )
+                    data = data[(data[filter_col] >= min_val) & (data[filter_col] <= max_val)]
+                else:
+                    unique_values = data[filter_col].dropna().unique()
+                    selected_values = st.sidebar.multiselect(f"Select values for {filter_col}", unique_values, default=unique_values)
+                    data = data[data[filter_col].isin(selected_values)]
+
+            st.write("Filtered Dataset:")
+            st.dataframe(data)
 
         num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
         cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]

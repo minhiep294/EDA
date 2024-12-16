@@ -570,25 +570,29 @@ def linear_regression_analysis(df, num_list, cat_list):
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
                 
 # Main App
-elif choice == "Upload Your Data":
-    st.subheader("Upload Data File")
-    uploaded_file = st.file_uploader("Choose a file to upload", type=["csv", "xlsx"])
+st.title("Interactive EDA Application")
 
-    if uploaded_file is not None:
-        # Read data from the uploaded file
-        try:
-            if uploaded_file.name.endswith(".csv"):
-                data = pd.read_csv(uploaded_file, encoding="utf-8")
-            else:
-                data = pd.read_excel(uploaded_file, engine="openpyxl")
-            st.success("File successfully uploaded!")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-            data = None
+# File Upload
+uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
 
-        if data is not None:
-            st.write("Uploaded Dataset Preview:")
-            st.dataframe(data)
+if uploaded_file:
+    file_extension = uploaded_file.name.split(".")[-1].lower()
+    try:
+        if file_extension == "csv":
+            df = pd.read_csv(uploaded_file)
+        elif file_extension == "xlsx":
+            sheet_names = pd.ExcelFile(uploaded_file).sheet_names
+            selected_sheet = st.selectbox("Select sheet to load", sheet_names)
+            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
+        else:
+            st.error("Unsupported file type. Please upload a CSV or Excel file.")
+    except Exception as e:
+        st.error(f"Error loading file: {e}")
+        df = None
+
+    if df is not None:
+        st.write("Dataset Preview")
+        st.dataframe(df.head())
 
             # Sidebar for analysis options
             st.sidebar.header("Select Analysis Option")

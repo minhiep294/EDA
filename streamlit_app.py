@@ -628,25 +628,33 @@ def main():
             else:
                 st.error("Unsupported file format. Please upload a CSV or Excel file.")
                 return
-            
-            # Check if the DataFrame is empty
-            if df.empty:
-                st.error("The uploaded file is empty.")
-                return
-            
-            # Display dataset preview
-            st.write("### Dataset Preview")
-            st.dataframe(df.head())
 
-            # Process filtering
+            # Validate the dataset
+            if not isinstance(df, pd.DataFrame):
+                st.error("The uploaded file is not a valid dataset.")
+                return
+
+            if df.empty:
+                st.error("The uploaded dataset is empty.")
+                return
+
+            # Dataset preview
+            try:
+                st.write("### Dataset Preview")
+                st.dataframe(df.head())
+            except AttributeError as e:
+                st.error(f"Error rendering dataset preview: {e}")
+                return
+
+            # Filter the dataset
             try:
                 filtered_df = filter_data(df)
                 st.write("### Filtered Dataset")
                 st.dataframe(filtered_df)
-            except AttributeError as e:
-                st.error(f"An error occurred while filtering the data: {e}")
+            except Exception as e:
+                st.error(f"Error during filtering: {e}")
                 return
-            
+
             # Identify numerical and categorical columns
             num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
             cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]

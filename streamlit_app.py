@@ -610,7 +610,6 @@ def linear_regression_analysis(df, num_list, cat_list):
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
                 
 # Main App
-# File Upload Section
 def main():
     st.title("Interactive EDA App")
     uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
@@ -620,8 +619,10 @@ def main():
 
         try:
             if file_extension == "csv":
+                # Read CSV file
                 df = pd.read_csv(uploaded_file)
             elif file_extension == "xlsx":
+                # Read Excel file using openpyxl
                 df = pd.read_excel(uploaded_file, engine="openpyxl")
             else:
                 st.error("Unsupported file type. Please upload a CSV or Excel file.")
@@ -645,21 +646,27 @@ def main():
             num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
             cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
 
-        st.sidebar.title("Navigation")
-        analysis_type = st.sidebar.radio(
-            "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
-        )
+            st.sidebar.title("Navigation")
+            analysis_type = st.sidebar.radio(
+                "Choose Analysis Type:",
+                ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
+            )
 
-        if analysis_type == "Data Cleaning & Descriptive":
-            data_cleaning_and_descriptive(df)
-        elif analysis_type == "Univariate Analysis":
-            univariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Bivariate Analysis":
-            bivariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Multivariate Analysis":
-            multivariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Linear Regression":
-            linear_regression_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Subgroup Analysis":
-            subgroup_analysis(filtered_df, num_list, cat_list)
+            if analysis_type == "Data Cleaning & Descriptive":
+                data_cleaning_and_descriptive(df)
+            elif analysis_type == "Univariate Analysis":
+                univariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Bivariate Analysis":
+                bivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Multivariate Analysis":
+                multivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Linear Regression":
+                linear_regression_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Subgroup Analysis":
+                subgroup_analysis(filtered_df, num_list, cat_list)
+
+        except Exception as e:
+            st.error("An error occurred while processing the file.")
+            st.write(f"Error details: {e}")
+    else:
+        st.warning("Please upload a file to proceed.")

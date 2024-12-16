@@ -477,6 +477,7 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
+# Linear Regression Section
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 
@@ -491,57 +492,69 @@ def linear_regression_analysis(df, num_list, cat_list):
         if x_col and y_col:
             try:
                 # Prepare data
-                if x_col in cat_list:  # If X is categorical, convert to dummy variables
+                if x_col in cat_list:  # Convert categorical to dummy variables
                     X = pd.get_dummies(df[x_col], drop_first=True)
                 else:
-                    X = df[[x_col]]  # Independent variable
+                    X = df[[x_col]]
                 
-                y = df[y_col]  # Dependent variable
-                
+                y = df[y_col]
+
                 # Combine and drop missing values
                 combined_data = pd.concat([X, y], axis=1).dropna()
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
 
-                # Ensure data contains no invalid values
-                if not np.isfinite(X.values).all() or not np.isfinite(y.values).all():
-                    st.error("The data contains invalid values (e.g., NaN or Infinity). Please clean your dataset.")
-                    return
+                # Add constant for intercept in statsmodels
+                X = sm.add_constant(X)
 
-                # Fit the model
-                model = LinearRegression()
-                model.fit(X, y)
+                # Fit the model using statsmodels
+                model = sm.OLS(y, X).fit()
 
-                # Get predictions and metrics
-                y_pred = model.predict(X)
-                r2 = r2_score(y, y_pred)
-                intercept = model.intercept_
+                # Display results summary
+                st.markdown("### Regression Results Summary")
+                st.text(model.summary())
 
-                # Prepare coefficients table
-                coef_df = pd.DataFrame({
-                    "Variable": ["Intercept"] + list(X.columns),
-                    "Coefficient": [intercept] + list(model.coef_)
-                })
-                st.markdown("### Regression Results")
-                st.markdown("#### Model Coefficients")
-                st.table(coef_df)
-
-                # Model metrics
+                # Prepare results for export
                 results_df = pd.DataFrame({
-                    "Metric": ["R-squared"],
-                    "Value": [r2]
+                    "Variable": model.params.index,
+                    "Coefficient": model.params.values,
+                    "P-Value": model.pvalues.values,
+                    "T-Statistic": model.tvalues.values,
+                    "95% CI Lower": model.conf_int()[0],
+                    "95% CI Upper": model.conf_int()[1]
                 })
-                st.markdown("#### Model Metrics")
+
+                # Display results as a table
+                st.markdown("### Detailed Coefficients and Statistics")
                 st.table(results_df)
 
+                # Model Metrics
+                st.markdown("### Model Metrics")
+                metrics_df = pd.DataFrame({
+                    "Metric": ["R-squared", "Adjusted R-squared", "F-statistic"],
+                    "Value": [model.rsquared, model.rsquared_adj, model.fvalue]
+                })
+                st.table(metrics_df)
+
                 # Residuals plot
-                residuals = y - y_pred
+                residuals = model.resid
+                fitted_vals = model.fittedvalues
                 fig, ax = plt.subplots()
-                sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-                ax.set_title("Residuals Plot")
-                ax.set_xlabel("Predicted Values")
+                sns.residplot(x=fitted_vals, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+                ax.set_title("Residuals vs Fitted")
+                ax.set_xlabel("Fitted Values")
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
+
+                # Add export option for results
+                st.markdown("### Export Results")
+                csv = results_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="Download Regression Results as CSV",
+                    data=csv,
+                    file_name="regression_results.csv",
+                    mime="text/csv"
+                )
             except Exception as e:
                 st.error(f"An error occurred during Simple Linear Regression: {e}")
 
@@ -564,48 +577,60 @@ def linear_regression_analysis(df, num_list, cat_list):
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
 
-                # Ensure data contains no invalid values
-                if not np.isfinite(X.values).all() or not np.isfinite(y.values).all():
-                    st.error("The data contains invalid values (e.g., NaN or Infinity). Please clean your dataset.")
-                    return
+                # Add constant for intercept in statsmodels
+                X = sm.add_constant(X)
 
-                # Fit the model
-                model = LinearRegression()
-                model.fit(X, y)
+                # Fit the model using statsmodels
+                model = sm.OLS(y, X).fit()
 
-                # Get predictions and metrics
-                y_pred = model.predict(X)
-                r2 = r2_score(y, y_pred)
-                mse = mean_squared_error(y, y_pred)
-                adj_r2 = 1 - (1 - r2) * (len(y) - 1) / (len(y) - X.shape[1] - 1)
+                # Display results summary
+                st.markdown("### Regression Results Summary")
+                st.text(model.summary())
 
-                # Prepare coefficients table
-                coef_df = pd.DataFrame({
-                    "Variable": ["Intercept"] + list(X.columns),
-                    "Coefficient": [model.intercept_] + list(model.coef_)
+                # Prepare results for export
+                results_df = pd.DataFrame({
+                    "Variable": model.params.index,
+                    "Coefficient": model.params.values,
+                    "P-Value": model.pvalues.values,
+                    "T-Statistic": model.tvalues.values,
+                    "95% CI Lower": model.conf_int()[0],
+                    "95% CI Upper": model.conf_int()[1]
                 })
-                st.markdown("### Regression Results")
-                st.markdown("#### Model Coefficients")
-                st.table(coef_df)
 
-                # Model metrics
+                # Display results as a table
+                st.markdown("### Detailed Coefficients and Statistics")
+                st.table(results_df)
+
+                # Model Metrics
+                st.markdown("### Model Metrics")
                 metrics_df = pd.DataFrame({
-                    "Metric": ["R-squared", "Adjusted R-squared", "Mean Squared Error (MSE)"],
-                    "Value": [r2, adj_r2, mse]
+                    "Metric": ["R-squared", "Adjusted R-squared", "F-statistic"],
+                    "Value": [model.rsquared, model.rsquared_adj, model.fvalue]
                 })
-                st.markdown("#### Model Metrics")
                 st.table(metrics_df)
 
                 # Residuals plot
-                residuals = y - y_pred
+                residuals = model.resid
+                fitted_vals = model.fittedvalues
                 fig, ax = plt.subplots()
-                sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-                ax.set_title("Residuals Plot")
-                ax.set_xlabel("Predicted Values")
+                sns.residplot(x=fitted_vals, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+                ax.set_title("Residuals vs Fitted")
+                ax.set_xlabel("Fitted Values")
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
+
+                # Add export option for results
+                st.markdown("### Export Results")
+                csv = results_df.to_csv(index=False).encode("utf-8")
+                st.download_button(
+                    label="Download Regression Results as CSV",
+                    data=csv,
+                    file_name="regression_results.csv",
+                    mime="text/csv"
+                )
             except Exception as e:
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
+
                 
 # Main App
 # File Upload Section

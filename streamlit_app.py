@@ -627,13 +627,18 @@ def main():
                 df = pd.read_csv(uploaded_file)
             elif file_extension in ["xls", "xlsx", "xlsm", "xlsb"]:
                 st.write("Debug: Reading Excel file...")
-                # Read Excel file using BytesIO for better handling
                 df = pd.read_excel(BytesIO(uploaded_file.read()), engine="openpyxl")
             else:
                 st.error("Unsupported file format. Please upload a CSV or Excel file.")
                 return
 
-            st.write("Debug: File read successfully. DataFrame shape:", df.shape)
+            # Log the type of the read object
+            st.write(f"Debug: Data type after reading the file: {type(df)}")
+
+            # Ensure the file is processed as a DataFrame
+            if not isinstance(df, pd.DataFrame):
+                st.error("The uploaded file could not be processed as a DataFrame. Please check the file format.")
+                return
 
             # Check if DataFrame is empty
             if df.empty:
@@ -680,6 +685,6 @@ def main():
         except Exception as e:
             st.error(f"An unexpected error occurred during processing: {e}")
             import traceback
-            st.text(traceback.format_exc())  # Provide detailed error traceback for debugging
+            st.text(traceback.format_exc())  # Provide detailed traceback for debugging
     else:
         st.warning("Please upload a file to proceed.")

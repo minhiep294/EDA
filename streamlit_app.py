@@ -1,7 +1,4 @@
 import io
-import openpyxl
-import requests
-import base64
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,6 +7,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
 import statsmodels.api as sm
 
 # Define save_chart_as_image function
@@ -20,29 +18,16 @@ def save_chart_as_image(fig, filename="chart.png"):
     return buffer
 
 # Section: Data Cleaning and Descriptive Statistics
-# Function to check if DataFrame is valid
-def validate_dataframe(df):
-    if df is None:
-        st.error("The DataFrame is not defined.")
-        return False
-    if df.empty:
-        st.error("The uploaded file resulted in an empty DataFrame. Please check the file.")
-        return False
-    return True
-
-# Function for data cleaning and descriptive stats
 def data_cleaning_and_descriptive(df):
+    # Section 1: Data Cleaning
     st.header("1. Data Cleaning")
 
-    if not validate_dataframe(df):
-        return  # Exit function if DataFrame is invalid
-
+    # Handle Missing Values
     st.subheader("Handle Missing Values")
-    missing_option = st.radio(
-        "Choose a method to handle missing values:",
-        ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data"),
-    )
+    missing_option = st.radio("Choose a method to handle missing values:", 
+                               ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data"))
     if missing_option == "Impute with Mean (Numerical Only)":
+        # Impute missing values with mean for numeric columns
         numeric_cols = df.select_dtypes(include="number").columns
         df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
         st.write("Missing values in numerical columns were imputed with the mean.")
@@ -52,6 +37,7 @@ def data_cleaning_and_descriptive(df):
         after = df.shape[0]
         st.write(f"Removed {before - after} rows containing missing data.")
 
+    # Remove Duplicates
     st.subheader("Remove Duplicates")
     if st.button("Remove Duplicate Rows"):
         before = df.shape[0]
@@ -59,6 +45,7 @@ def data_cleaning_and_descriptive(df):
         after = df.shape[0]
         st.write(f"Removed {before - after} duplicate rows.")
 
+    # Correct Data Types
     st.subheader("Correct Data Types")
     for col in df.columns:
         col_type = st.selectbox(
@@ -79,8 +66,6 @@ def data_cleaning_and_descriptive(df):
             st.write(f"Could not convert {col} to {col_type}: {e}")
     st.write("Data Cleaning Complete.")
     st.write(df.head())
-    st.header("2. Descriptive Statistics")
-    st.write(df.describe(include="all"))
 
     # Section 2: Descriptive Statistics
     st.header("2. Descriptive Statistics")
@@ -493,268 +478,134 @@ def save_chart_as_image(fig):
 # Linear Regression Section
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
+
+    # Choose between Simple and Multiple Linear Regression
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
+        st.markdown("### Simple Linear Regression")
         x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+
         if x_col and y_col:
             try:
-                if x_col in cat_list:
+                # Prepare data
+                if x_col in cat_list:  # If X is categorical, convert to dummy variables
                     X = pd.get_dummies(df[x_col], drop_first=True)
                 else:
-                    X = df[[x_col]]
-                y = df[y_col]
+                    X = df[[x_col]]  # Independent variable
+                
+                y = df[y_col]  # Dependent variable
+                
+                # Combine and drop missing values
                 combined_data = pd.concat([X, y], axis=1).dropna()
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
-                X = sm.add_constant(X)
-                model = sm.OLS(y, X).fit()
-                st.markdown("### Regression Results Summary")
-                st.text(model.summary())
-                residuals = model.resid
-                fitted_vals = model.fittedvalues
+
+                # Ensure data contains no invalid values
+                if not np.isfinite(X.values).all() or not np.isfinite(y.values).all():
+                    st.error("The data contains invalid values (e.g., NaN or Infinity). Please clean your dataset.")
+                    return
+
+                # Fit the model
+                model = LinearRegression()
+                model.fit(X, y)
+
+                # Get predictions and metrics
+                y_pred = model.predict(X)
+                r2 = r2_score(y, y_pred)
+                intercept = model.intercept_
+
+                # Prepare coefficients table
+                coef_df = pd.DataFrame({
+                    "Variable": ["Intercept"] + list(X.columns),
+                    "Coefficient": [intercept] + list(model.coef_)
+                })
+                st.markdown("### Regression Results")
+                st.markdown("#### Model Coefficients")
+                st.table(coef_df)
+
+                # Model metrics
+                results_df = pd.DataFrame({
+                    "Metric": ["R-squared"],
+                    "Value": [r2]
+                })
+                st.markdown("#### Model Metrics")
+                st.table(results_df)
+
+                # Residuals plot
+                residuals = y - y_pred
                 fig, ax = plt.subplots()
-                sns.residplot(x=fitted_vals, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-                ax.set_title("Residuals vs Fitted")
-                ax.set_xlabel("Fitted Values")
+                sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+                ax.set_title("Residuals Plot")
+                ax.set_xlabel("Predicted Values")
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
             except Exception as e:
                 st.error(f"An error occurred during Simple Linear Regression: {e}")
 
     elif regression_type == "Multiple Regression":
+        st.markdown("### Multiple Linear Regression")
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
+
         if x_cols and y_col:
             try:
-                X = pd.get_dummies(df[x_cols], drop_first=True)
+                # Prepare data
+                X = df[x_cols]
+
+                # Convert categorical variables to dummy variables
+                X = pd.get_dummies(X, drop_first=True)
                 y = df[y_col]
+
+                # Combine and drop missing values
                 combined_data = pd.concat([X, y], axis=1).dropna()
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
-                X = sm.add_constant(X)
-                model = sm.OLS(y, X).fit()
-                st.markdown("### Regression Results Summary")
-                st.text(model.summary())
-                residuals = model.resid
-                fitted_vals = model.fittedvalues
+
+                # Ensure data contains no invalid values
+                if not np.isfinite(X.values).all() or not np.isfinite(y.values).all():
+                    st.error("The data contains invalid values (e.g., NaN or Infinity). Please clean your dataset.")
+                    return
+
+                # Fit the model
+                model = LinearRegression()
+                model.fit(X, y)
+
+                # Get predictions and metrics
+                y_pred = model.predict(X)
+                r2 = r2_score(y, y_pred)
+                mse = mean_squared_error(y, y_pred)
+                adj_r2 = 1 - (1 - r2) * (len(y) - 1) / (len(y) - X.shape[1] - 1)
+
+                # Prepare coefficients table
+                coef_df = pd.DataFrame({
+                    "Variable": ["Intercept"] + list(X.columns),
+                    "Coefficient": [model.intercept_] + list(model.coef_)
+                })
+                st.markdown("### Regression Results")
+                st.markdown("#### Model Coefficients")
+                st.table(coef_df)
+
+                # Model metrics
+                metrics_df = pd.DataFrame({
+                    "Metric": ["R-squared", "Adjusted R-squared", "Mean Squared Error (MSE)"],
+                    "Value": [r2, adj_r2, mse]
+                })
+                st.markdown("#### Model Metrics")
+                st.table(metrics_df)
+
+                # Residuals plot
+                residuals = y - y_pred
                 fig, ax = plt.subplots()
-                sns.residplot(x=fitted_vals, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
-                ax.set_title("Residuals vs Fitted")
-                ax.set_xlabel("Fitted Values")
+                sns.residplot(x=y_pred, y=residuals, lowess=True, ax=ax, line_kws={"color": "red", "lw": 1})
+                ax.set_title("Residuals Plot")
+                ax.set_xlabel("Predicted Values")
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
             except Exception as e:
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
-
-# Main Application
-def main():
-    st.title("Interactive EDA and AI App")
-
-    api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password")
-
-    st.sidebar.title("Navigation")
-    analysis_type = st.sidebar.radio(
-        "Choose Analysis Type:",
-        ["EDA (Data Analysis)", "Linear Regression", "AI Image Analysis"]
-    )
-
-    if analysis_type == "EDA (Data Analysis)":
-        uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
-        if uploaded_file:
-            file_extension = uploaded_file.name.split(".")[-1].lower()
-            try:
-                if file_extension == "csv":
-                    df = pd.read_csv(uploaded_file)
-                elif file_extension == "xlsx":
-                    df = pd.read_excel(uploaded_file, engine="openpyxl")
-                else:
-                    st.error("Unsupported file type. Please upload a CSV or Excel file.")
-                    return
-
-                if df.empty:
-                    st.error("The uploaded file is empty. Please check the file.")
-                    return
-
-                st.write("### Dataset Preview:")
-                st.dataframe(df.head())
-
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-
-    elif analysis_type == "Linear Regression":
-        uploaded_file = st.file_uploader("Upload your dataset for Regression (CSV or Excel):", type=["csv", "xlsx"])
-        if uploaded_file:
-            file_extension = uploaded_file.name.split(".")[-1].lower()
-            try:
-                if file_extension == "csv":
-                    df = pd.read_csv(uploaded_file)
-                elif file_extension == "xlsx":
-                    df = pd.read_excel(uploaded_file, engine="openpyxl")
-                else:
-                    st.error("Unsupported file type. Please upload a CSV or Excel file.")
-                    return
-
-                if df.empty:
-                    st.error("The uploaded file is empty. Please check the file.")
-                    return
-
-                num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
-                cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
-
-                linear_regression_analysis(df, num_list, cat_list)
-
-            except Exception as e:
-                st.error(f"An error occurred: {e}")
-
-    elif analysis_type == "AI Image Analysis":
-        if api_key:
-            ai_image_analysis(api_key)
-        else:
-            st.warning("Please enter a valid API key to proceed.")
-
-if __name__ == "__main__":
-    main()
-
-# Helper function to encode image to base64
-def encode_image(image_path):
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode("utf-8")
-        
-# AI Section: Analyze images using GPT-4 Vision API
-def ai_image_analysis(api_key):
-    st.header("AI Image Analysis with GPT-4 Vision")
-    uploaded_image = st.file_uploader("Upload an image:", type=["jpg", "jpeg", "png"])
-    if uploaded_image:
-        with open("temp_image.jpg", "wb") as temp_file:
-            temp_file.write(uploaded_image.read())
-
-        st.image("temp_image.jpg", caption="Uploaded Image", use_column_width=True)
-
-        base64_image = encode_image("temp_image.jpg")
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        }
-
-        payload = {
-            "model": "gpt-4-vision-preview",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "What’s in this image?"},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                    ],
-                }
-            ],
-            "max_tokens": 300,
-        }
-
-        st.write("Analyzing the image... Please wait.")
-        try:
-            response = requests.post("https://api.openai.com/v1/chat/completions", headers=headers, json=payload)
-            response_data = response.json()
-            if response.status_code == 200:
-                gpt_response = response_data["choices"][0]["message"]["content"]
-                st.subheader("AI's Response:")
-                st.write(gpt_response)
-            else:
-                st.error("Failed to analyze the image. Check the API key and request.")
-                st.write(f"Error Details: {response_data}")
-        except Exception as e:
-            st.error(f"An error occurred: {e}")
-# Main App
-# Helper function for dataset filtering
-def filter_data(df):
-    st.sidebar.title("Filter Data")
-    filters = {}
-    filter_container = st.sidebar.container()
-    with filter_container:
-        add_filter_button = st.button("Add New Filter")
-        if "filter_count" not in st.session_state:
-            st.session_state.filter_count = 0
-
-        if add_filter_button:
-            st.session_state.filter_count += 1
-
-        # Manage filters dynamically
-        for i in range(st.session_state.filter_count):
-            with st.expander(f"Filter {i+1}", expanded=True):
-                col_name = st.selectbox(
-                    f"Select Column for Filter {i+1}",
-                    df.columns,
-                    key=f"filter_col_{i}",
-                )
-                if pd.api.types.is_numeric_dtype(df[col_name]):
-                    min_val = int(df[col_name].min())
-                    max_val = int(df[col_name].max())
-                    selected_range = st.slider(
-                        f"Select range for {col_name}",
-                        min_value=min_val,
-                        max_value=max_val,
-                        value=(min_val, max_val),
-                        key=f"filter_slider_{i}",
-                    )
-                    filters[col_name] = ("range", selected_range)
-                elif pd.api.types.is_string_dtype(df[col_name]):
-                    unique_values = df[col_name].unique().tolist()
-                    selected_values = st.multiselect(
-                        f"Select categories for {col_name}",
-                        options=unique_values,
-                        default=unique_values,
-                        key=f"filter_multiselect_{i}",
-                    )
-                    filters[col_name] = ("categories", selected_values)
-                elif pd.api.types.is_datetime64_any_dtype(df[col_name]):
-                    min_date = df[col_name].min()
-                    max_date = df[col_name].max()
-                    selected_dates = st.date_input(
-                        f"Select date range for {col_name}",
-                        value=(min_date, max_date),
-                        key=f"filter_date_{i}",
-                    )
-                    filters[col_name] = ("dates", selected_dates)
-
-    # Apply filters to the dataset
-    filtered_df = df.copy()
-    for col, (filter_type, value) in filters.items():
-        if filter_type == "range":
-            filtered_df = filtered_df[
-                (filtered_df[col] >= value[0]) & (filtered_df[col] <= value[1])
-            ]
-        elif filter_type == "categories":
-            filtered_df = filtered_df[filtered_df[col].isin(value)]
-        elif filter_type == "dates":
-            filtered_df = filtered_df[
-                (filtered_df[col] >= pd.to_datetime(value[0]))
-                & (filtered_df[col] <= pd.to_datetime(value[1]))
-            ]
-    return filtered_df
-
-# Data cleaning and descriptive statistics
-def data_cleaning_and_descriptive(df):
-    st.header("1. Data Cleaning")
-    st.write("Data Cleaning not implemented in this demo.")
-
-# Other analysis placeholders
-def univariate_analysis(df, num_list, cat_list):
-    st.write("Univariate Analysis not implemented.")
-
-def bivariate_analysis(df, num_list, cat_list):
-    st.write("Bivariate Analysis not implemented.")
-
-def multivariate_analysis(df, num_list, cat_list):
-    st.write("Multivariate Analysis not implemented.")
-
-def subgroup_analysis(df, num_list, cat_list):
-    st.write("Subgroup Analysis not implemented.")
-
-def linear_regression_analysis(df, num_list, cat_list):
-    st.write("Linear Regression not implemented.")
-
+                
 # Main App
 # File Upload Section
 st.title("Interactive EDA Application")

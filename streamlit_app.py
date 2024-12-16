@@ -11,15 +11,15 @@ from sklearn.metrics import mean_squared_error, r2_score
 import numpy as np
 import statsmodels.api as sm
 
-# Define save_chart_as_image function
+# Helper Function: Save Chart as Image
 def save_chart_as_image(fig, filename="chart.png"):
     buffer = io.BytesIO()
     fig.savefig(buffer, format="png", bbox_inches="tight")
     buffer.seek(0)
     return buffer
 
-# Section: Data Cleaning and Descriptive Statistics
-# Function to check if DataFrame is valid
+
+# Validate DataFrame
 def validate_dataframe(df):
     if df is None:
         st.error("The DataFrame is not defined.")
@@ -29,6 +29,7 @@ def validate_dataframe(df):
         return False
     return True
 
+# Section: Data Cleaning and Descriptive Statistics
 # Function for data cleaning and descriptive stats
 def data_cleaning_and_descriptive(df):
     st.header("1. Data Cleaning")

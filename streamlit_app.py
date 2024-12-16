@@ -18,16 +18,17 @@ def save_chart_as_image(fig, filename="chart.png"):
     return buffer
 
 # Section: Data Cleaning and Descriptive Statistics
+# Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
-    # Section 1: Data Cleaning
     st.header("1. Data Cleaning")
 
     # Handle Missing Values
     st.subheader("Handle Missing Values")
-    missing_option = st.radio("Choose a method to handle missing values:", 
-                               ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data"))
+    missing_option = st.radio(
+        "Choose a method to handle missing values:",
+        ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data")
+    )
     if missing_option == "Impute with Mean (Numerical Only)":
-        # Impute missing values with mean for numeric columns
         numeric_cols = df.select_dtypes(include="number").columns
         df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
         st.write("Missing values in numerical columns were imputed with the mean.")
@@ -67,7 +68,6 @@ def data_cleaning_and_descriptive(df):
     st.write("Data Cleaning Complete.")
     st.write(df.head())
 
-    # Section 2: Descriptive Statistics
     st.header("2. Descriptive Statistics")
     st.write(df.describe(include="all"))
 
@@ -607,65 +607,43 @@ def linear_regression_analysis(df, num_list, cat_list):
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
                 
 # Main App
-# File Upload Section
 st.title("Interactive EDA Application")
 uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel only):", type=["csv", "xlsx"])
 
 if uploaded_file:
-    # Determine the file type based on its extension
     file_extension = uploaded_file.name.split(".")[-1].lower()
-    
     try:
         if file_extension == "csv":
-            # Read CSV file
             df = pd.read_csv(uploaded_file)
         elif file_extension == "xlsx":
-            # Read Excel file
-            sheet_name = st.text_input("Enter sheet name (leave blank for default):", "")
-            df = pd.read_excel(uploaded_file, sheet_name=sheet_name if sheet_name else None)
+            sheet_names = pd.ExcelFile(uploaded_file).sheet_names
+            selected_sheet = st.selectbox("Select sheet to load", sheet_names)
+            df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
         else:
-            st.error("Unsupported file type. Please upload a CSV or Excel file.")
+            st.error("Unsupported file type.")
             df = None
     except Exception as e:
-        st.error(f"Error reading the file: {e}")
+        st.error(f"Error reading file: {e}")
         df = None
-    
+
     if df is not None:
-        st.write("### Dataset Preview:")
+        st.write("### Dataset Preview")
         st.dataframe(df.head())
 
-        # Convert date columns to datetime if detected
-        for col in df.columns:
-            if pd.api.types.is_object_dtype(df[col]):
-                try:
-                    df[col] = pd.to_datetime(df[col])
-                except Exception:
-                    continue
-
-        # Filter the dataset
-        filtered_df = filter_data(df)
-
-        st.write("### Filtered Dataset:")
-        st.dataframe(filtered_df)
-
-        num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
-        cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
-
-        st.sidebar.title("Navigation")
+        # Analysis Navigation
         analysis_type = st.sidebar.radio(
             "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
+            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Linear Regression"]
         )
+
+        num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
+        cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
 
         if analysis_type == "Data Cleaning & Descriptive":
             data_cleaning_and_descriptive(df)
         elif analysis_type == "Univariate Analysis":
-            univariate_analysis(filtered_df, num_list, cat_list)
+            univariate_analysis(df, num_list, cat_list)
         elif analysis_type == "Bivariate Analysis":
-            bivariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Multivariate Analysis":
-            multivariate_analysis(filtered_df, num_list, cat_list)
+            bivariate_analysis(df, num_list, cat_list)
         elif analysis_type == "Linear Regression":
-            linear_regression_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Subgroup Analysis":
-            subgroup_analysis(filtered_df, num_list, cat_list)
+            linear_regression_analysis(df, num_list)

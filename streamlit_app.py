@@ -656,17 +656,14 @@ if uploaded_file:
         st.error(f"Error reading the file: {e}")
         df = None
     
-    if df is not None:
+    # Ensure df is valid before proceeding
+    if df is not None and not df.empty:
         st.write("### Dataset Preview:")
         st.dataframe(df.head())
-
-        # Convert date columns to datetime if detected
-        for col in df.columns:
-            if pd.api.types.is_object_dtype(df[col]):
-                try:
-                    df[col] = pd.to_datetime(df[col])
-                except Exception:
-                    continue
+    else:
+        st.error("The uploaded file is empty or invalid. Please check your data.")
+else:
+    st.warning("No file uploaded yet. Please upload a file.")
 
         # Filter the dataset
         filtered_df = filter_data(df)

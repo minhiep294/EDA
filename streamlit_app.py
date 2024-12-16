@@ -612,61 +612,68 @@ def linear_regression_analysis(df, num_list, cat_list):
 # Main App
 def main():
     st.title("Interactive EDA App")
+    
+    # File uploader
     uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
 
     if uploaded_file:
         file_extension = uploaded_file.name.split(".")[-1].lower()
 
         try:
+            # Load the file
             if file_extension == "csv":
-                # Read CSV file
                 df = pd.read_csv(uploaded_file)
             elif file_extension == "xlsx":
-                # Read Excel file using openpyxl
                 df = pd.read_excel(uploaded_file, engine="openpyxl")
             else:
-                st.error("Unsupported file type. Please upload a CSV or Excel file.")
+                st.error("Unsupported file format. Please upload a CSV or Excel file.")
                 return
-
+            
+            # Check if the DataFrame is empty
             if df.empty:
-                st.error("The uploaded file is empty. Please check the file.")
+                st.error("The uploaded file is empty.")
                 return
-
-            # Dataset preview
-            st.write("### Dataset Preview:")
+            
+            # Display dataset preview
+            st.write("### Dataset Preview")
             st.dataframe(df.head())
 
-            # Filter the dataset
-            filtered_df = filter_data(df)
-
-            st.write("### Filtered Dataset:")
-            st.dataframe(filtered_df)
-
+            # Process filtering
+            try:
+                filtered_df = filter_data(df)
+                st.write("### Filtered Dataset")
+                st.dataframe(filtered_df)
+            except AttributeError as e:
+                st.error(f"An error occurred while filtering the data: {e}")
+                return
+            
             # Identify numerical and categorical columns
             num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
             cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
 
+            # Analysis Navigation
             st.sidebar.title("Navigation")
             analysis_type = st.sidebar.radio(
                 "Choose Analysis Type:",
                 ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
             )
 
+            # Route to the selected analysis
             if analysis_type == "Data Cleaning & Descriptive":
-                data_cleaning_and_descriptive(df)
+                data_cleaning_and_descriptive(filtered_df)
             elif analysis_type == "Univariate Analysis":
                 univariate_analysis(filtered_df, num_list, cat_list)
             elif analysis_type == "Bivariate Analysis":
                 bivariate_analysis(filtered_df, num_list, cat_list)
             elif analysis_type == "Multivariate Analysis":
                 multivariate_analysis(filtered_df, num_list, cat_list)
-            elif analysis_type == "Linear Regression":
-                linear_regression_analysis(filtered_df, num_list, cat_list)
             elif analysis_type == "Subgroup Analysis":
                 subgroup_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Linear Regression":
+                linear_regression_analysis(filtered_df, num_list, cat_list)
 
         except Exception as e:
-            st.error("An error occurred while processing the file.")
-            st.write(f"Error details: {e}")
+            st.error(f"An unexpected error occurred: {e}")
+            st.exception(e)
     else:
         st.warning("Please upload a file to proceed.")

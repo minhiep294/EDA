@@ -36,6 +36,7 @@ def data_cleaning_and_descriptive(df):
     if not validate_dataframe(df):
         return
 
+    # Missing Values
     st.subheader("Handle Missing Values")
     missing_option = st.radio(
         "Choose a method to handle missing values:",
@@ -51,6 +52,7 @@ def data_cleaning_and_descriptive(df):
         after = df.shape[0]
         st.write(f"Removed {before - after} rows containing missing data.")
 
+    # Duplicates
     st.subheader("Remove Duplicates")
     if st.button("Remove Duplicate Rows"):
         before = df.shape[0]
@@ -58,6 +60,7 @@ def data_cleaning_and_descriptive(df):
         after = df.shape[0]
         st.write(f"Removed {before - after} duplicate rows.")
 
+    # Data Type Correction
     st.subheader("Correct Data Types")
     for col in df.columns:
         col_type = st.selectbox(
@@ -79,6 +82,7 @@ def data_cleaning_and_descriptive(df):
     st.write("Data Cleaning Complete.")
     st.write(df.head())
 
+    # Descriptive Statistics
     st.header("2. Descriptive Statistics")
     st.write(df.describe(include="all"))
 
@@ -488,6 +492,9 @@ def main():
                     "Linear Regression",
                 ],
             )
+            
+            # Debug the selected option
+            st.write(f"Debug: Selected Analysis Type: {analysis_type}")
 
             # Navigate based on analysis type
             if analysis_type == "Data Cleaning & Descriptive":

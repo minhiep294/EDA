@@ -610,72 +610,76 @@ def linear_regression_analysis(df, num_list, cat_list):
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
                 
 # Main App
-# File uploader
-uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xls", "xlsx", "xlsm", "xlsb"])
-st.write("Debug: Uploaded file:", uploaded_file)
+def main():
+    st.title("Interactive EDA App")
+    st.write("Debug: Starting app...")
 
-if uploaded_file:
-    file_extension = uploaded_file.name.split(".")[-1].lower()
-    st.write("Debug: File extension detected:", file_extension)
+    # File uploader
+    uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xls", "xlsx", "xlsm", "xlsb"])
+    if uploaded_file:
+        file_extension = uploaded_file.name.split(".")[-1].lower()
+        st.write("Debug: File extension detected:", file_extension)
 
-    try:
-        # Load the file
-        if file_extension == "csv":
-            st.write("Debug: Reading CSV file...")
-            df = pd.read_csv(uploaded_file)
-        elif file_extension in ["xls", "xlsx", "xlsm", "xlsb"]:
-            st.write("Debug: Reading Excel file...")
-            df = pd.read_excel(uploaded_file, engine="openpyxl")
-        else:
-            st.error("Unsupported file format. Please upload a CSV or Excel file.")
-            return
+        try:
+            # Load the file
+            if file_extension == "csv":
+                st.write("Debug: Reading CSV file...")
+                df = pd.read_csv(uploaded_file)
+            elif file_extension in ["xls", "xlsx", "xlsm", "xlsb"]:
+                st.write("Debug: Reading Excel file...")
+                # Read Excel file using BytesIO for better handling
+                df = pd.read_excel(BytesIO(uploaded_file.read()), engine="openpyxl")
+            else:
+                st.error("Unsupported file format. Please upload a CSV or Excel file.")
+                return
 
-        st.write("Debug: File read successfully. DataFrame shape:", df.shape)
+            st.write("Debug: File read successfully. DataFrame shape:", df.shape)
 
-        # Check if DataFrame is empty
-        if df.empty:
-            st.error("The uploaded dataset is empty.")
-            return
+            # Check if DataFrame is empty
+            if df.empty:
+                st.error("The uploaded dataset is empty.")
+                return
 
-        # Dataset preview
-        st.write("### Dataset Preview")
-        st.dataframe(df.head())
+            # Dataset preview
+            st.write("### Dataset Preview")
+            st.dataframe(df.head())
 
-        # Process filtering
-        st.write("Debug: Starting data filtering...")
-        filtered_df = filter_data(df)
-        st.write("### Filtered Dataset")
-        st.dataframe(filtered_df)
+            # Process filtering
+            st.write("Debug: Starting data filtering...")
+            filtered_df = filter_data(df)
+            st.write("### Filtered Dataset")
+            st.dataframe(filtered_df)
 
-        # Identify numerical and categorical columns
-        num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
-        cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
-        st.write("Debug: Numerical columns:", num_list)
-        st.write("Debug: Categorical columns:", cat_list)
+            # Identify numerical and categorical columns
+            num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
+            cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
+            st.write("Debug: Numerical columns:", num_list)
+            st.write("Debug: Categorical columns:", cat_list)
 
-        # Analysis Navigation
-        st.sidebar.title("Navigation")
-        analysis_type = st.sidebar.radio(
-            "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
-        )
+            # Analysis Navigation
+            st.sidebar.title("Navigation")
+            analysis_type = st.sidebar.radio(
+                "Choose Analysis Type:",
+                ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
+            )
 
-        # Route to the selected analysis
-        if analysis_type == "Data Cleaning & Descriptive":
-            data_cleaning_and_descriptive(filtered_df)
-        elif analysis_type == "Univariate Analysis":
-            univariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Bivariate Analysis":
-            bivariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Multivariate Analysis":
-            multivariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Subgroup Analysis":
-            subgroup_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Linear Regression":
-            linear_regression_analysis(filtered_df, num_list, cat_list)
+            # Route to the selected analysis
+            if analysis_type == "Data Cleaning & Descriptive":
+                data_cleaning_and_descriptive(filtered_df)
+            elif analysis_type == "Univariate Analysis":
+                univariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Bivariate Analysis":
+                bivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Multivariate Analysis":
+                multivariate_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Subgroup Analysis":
+                subgroup_analysis(filtered_df, num_list, cat_list)
+            elif analysis_type == "Linear Regression":
+                linear_regression_analysis(filtered_df, num_list, cat_list)
 
-    except Exception as e:
-        st.error(f"An unexpected error occurred during processing: {e}")
-        st.exception(e)
-else:
-    st.warning("Please upload a file to proceed.")
+        except Exception as e:
+            st.error(f"An unexpected error occurred during processing: {e}")
+            import traceback
+            st.text(traceback.format_exc())  # Provide detailed error traceback for debugging
+    else:
+        st.warning("Please upload a file to proceed.")

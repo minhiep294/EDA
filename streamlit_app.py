@@ -20,15 +20,17 @@ def save_chart_as_image(fig, filename="chart.png"):
 
 # Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
-    # Section 1: Data Cleaning
     st.header("1. Data Cleaning")
-
-    # Handle Missing Values
+    
+    # Check if the DataFrame is empty
+    if df.empty:
+        st.error("The dataset is empty. Please upload a valid file.")
+        return
+    
     st.subheader("Handle Missing Values")
     missing_option = st.radio("Choose a method to handle missing values:", 
                                ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data"))
     if missing_option == "Impute with Mean (Numerical Only)":
-        # Impute missing values with mean for numeric columns
         numeric_cols = df.select_dtypes(include="number").columns
         df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
         st.write("Missing values in numerical columns were imputed with the mean.")
@@ -38,7 +40,6 @@ def data_cleaning_and_descriptive(df):
         after = df.shape[0]
         st.write(f"Removed {before - after} rows containing missing data.")
 
-    # Remove Duplicates
     st.subheader("Remove Duplicates")
     if st.button("Remove Duplicate Rows"):
         before = df.shape[0]
@@ -46,7 +47,6 @@ def data_cleaning_and_descriptive(df):
         after = df.shape[0]
         st.write(f"Removed {before - after} duplicate rows.")
 
-    # Correct Data Types
     st.subheader("Correct Data Types")
     for col in df.columns:
         col_type = st.selectbox(
@@ -67,6 +67,8 @@ def data_cleaning_and_descriptive(df):
             st.write(f"Could not convert {col} to {col_type}: {e}")
     st.write("Data Cleaning Complete.")
     st.write(df.head())
+    st.header("2. Descriptive Statistics")
+    st.write(df.describe(include="all"))
 
     # Section 2: Descriptive Statistics
     st.header("2. Descriptive Statistics")

@@ -490,26 +490,22 @@ def save_chart_as_image(fig):
     return buffer
     
 # Linear Regression Section
-# Linear Regression Section
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 
-    # Choose between Simple and Multiple Linear Regression
     regression_type = st.radio("Choose Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
-        st.markdown("### Simple Linear Regression")
         x_col = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_col and y_col:
             try:
                 # Prepare data
-                if x_col in cat_list:  # Convert categorical to dummy variables
+                if x_col in cat_list:
                     X = pd.get_dummies(df[x_col], drop_first=True)
                 else:
                     X = df[[x_col]]
-                
                 y = df[y_col]
 
                 # Combine and drop missing values
@@ -517,37 +513,15 @@ def linear_regression_analysis(df, num_list, cat_list):
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
 
-                # Add constant for intercept in statsmodels
+                # Add constant for intercept
                 X = sm.add_constant(X)
 
-                # Fit the model using statsmodels
+                # Fit the model
                 model = sm.OLS(y, X).fit()
 
-                # Display results summary
+                # Display regression results
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
-
-                # Prepare results for export
-                results_df = pd.DataFrame({
-                    "Variable": model.params.index,
-                    "Coefficient": model.params.values,
-                    "P-Value": model.pvalues.values,
-                    "T-Statistic": model.tvalues.values,
-                    "95% CI Lower": model.conf_int()[0],
-                    "95% CI Upper": model.conf_int()[1]
-                })
-
-                # Display results as a table
-                st.markdown("### Detailed Coefficients and Statistics")
-                st.table(results_df)
-
-                # Model Metrics
-                st.markdown("### Model Metrics")
-                metrics_df = pd.DataFrame({
-                    "Metric": ["R-squared", "Adjusted R-squared", "F-statistic"],
-                    "Value": [model.rsquared, model.rsquared_adj, model.fvalue]
-                })
-                st.table(metrics_df)
 
                 # Residuals plot
                 residuals = model.resid
@@ -559,30 +533,17 @@ def linear_regression_analysis(df, num_list, cat_list):
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
 
-                # Add export option for results
-                st.markdown("### Export Results")
-                csv = results_df.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    label="Download Regression Results as CSV",
-                    data=csv,
-                    file_name="regression_results.csv",
-                    mime="text/csv"
-                )
             except Exception as e:
                 st.error(f"An error occurred during Simple Linear Regression: {e}")
 
     elif regression_type == "Multiple Regression":
-        st.markdown("### Multiple Linear Regression")
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y_col = st.selectbox("Select Dependent Variable (Y):", num_list)
 
         if x_cols and y_col:
             try:
                 # Prepare data
-                X = df[x_cols]
-
-                # Convert categorical variables to dummy variables
-                X = pd.get_dummies(X, drop_first=True)
+                X = pd.get_dummies(df[x_cols], drop_first=True)
                 y = df[y_col]
 
                 # Combine and drop missing values
@@ -590,37 +551,15 @@ def linear_regression_analysis(df, num_list, cat_list):
                 X = combined_data.iloc[:, :-1]
                 y = combined_data.iloc[:, -1]
 
-                # Add constant for intercept in statsmodels
+                # Add constant for intercept
                 X = sm.add_constant(X)
 
-                # Fit the model using statsmodels
+                # Fit the model
                 model = sm.OLS(y, X).fit()
 
-                # Display results summary
+                # Display regression results
                 st.markdown("### Regression Results Summary")
                 st.text(model.summary())
-
-                # Prepare results for export
-                results_df = pd.DataFrame({
-                    "Variable": model.params.index,
-                    "Coefficient": model.params.values,
-                    "P-Value": model.pvalues.values,
-                    "T-Statistic": model.tvalues.values,
-                    "95% CI Lower": model.conf_int()[0],
-                    "95% CI Upper": model.conf_int()[1]
-                })
-
-                # Display results as a table
-                st.markdown("### Detailed Coefficients and Statistics")
-                st.table(results_df)
-
-                # Model Metrics
-                st.markdown("### Model Metrics")
-                metrics_df = pd.DataFrame({
-                    "Metric": ["R-squared", "Adjusted R-squared", "F-statistic"],
-                    "Value": [model.rsquared, model.rsquared_adj, model.fvalue]
-                })
-                st.table(metrics_df)
 
                 # Residuals plot
                 residuals = model.resid
@@ -632,18 +571,10 @@ def linear_regression_analysis(df, num_list, cat_list):
                 ax.set_ylabel("Residuals")
                 st.pyplot(fig)
 
-                # Add export option for results
-                st.markdown("### Export Results")
-                csv = results_df.to_csv(index=False).encode("utf-8")
-                st.download_button(
-                    label="Download Regression Results as CSV",
-                    data=csv,
-                    file_name="regression_results.csv",
-                    mime="text/csv"
-                )
             except Exception as e:
                 st.error(f"An error occurred during Multiple Linear Regression: {e}")
 
+# Main App
                 
 # Main App
 # Helper function for dataset filtering

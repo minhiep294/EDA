@@ -612,29 +612,29 @@ def linear_regression_analysis(df, num_list, cat_list):
 # Main App
 def main():
     st.title("Interactive EDA App")
-    
-    # File uploader
     st.write("Debug: Starting app...")
+
+    # File uploader
     uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
+    st.write("Debug: Uploaded file:", uploaded_file)
 
     if uploaded_file:
         file_extension = uploaded_file.name.split(".")[-1].lower()
+        st.write("Debug: File extension detected:", file_extension)
 
         try:
-            # Debugging before file reading
-            st.write(f"Debug: File uploaded - {uploaded_file.name} (extension: {file_extension})")
-
             # Load the file
             if file_extension == "csv":
+                st.write("Debug: Reading CSV file...")
                 df = pd.read_csv(uploaded_file)
             elif file_extension == "xlsx":
+                st.write("Debug: Reading Excel file...")
                 df = pd.read_excel(uploaded_file, engine="openpyxl")
             else:
                 st.error("Unsupported file format. Please upload a CSV or Excel file.")
                 return
 
-            # Debugging after file reading
-            st.write(f"Debug: File read successfully. Shape: {df.shape}")
+            st.write("Debug: File read successfully. DataFrame shape:", df.shape)
 
             # Check if DataFrame is empty
             if df.empty:
@@ -646,18 +646,16 @@ def main():
             st.dataframe(df.head())
 
             # Process filtering
-            try:
-                filtered_df = filter_data(df)
-                st.write("### Filtered Dataset")
-                st.dataframe(filtered_df)
-            except Exception as e:
-                st.error(f"An error occurred while filtering the data: {e}")
-                st.exception(e)
-                return
+            st.write("Debug: Starting data filtering...")
+            filtered_df = filter_data(df)
+            st.write("### Filtered Dataset")
+            st.dataframe(filtered_df)
 
             # Identify numerical and categorical columns
             num_list = [col for col in filtered_df.columns if pd.api.types.is_numeric_dtype(filtered_df[col])]
             cat_list = [col for col in filtered_df.columns if pd.api.types.is_string_dtype(filtered_df[col])]
+            st.write("Debug: Numerical columns:", num_list)
+            st.write("Debug: Categorical columns:", cat_list)
 
             # Analysis Navigation
             st.sidebar.title("Navigation")
@@ -683,6 +681,5 @@ def main():
         except Exception as e:
             st.error(f"An unexpected error occurred during processing: {e}")
             st.exception(e)
-
     else:
         st.warning("Please upload a file to proceed.")

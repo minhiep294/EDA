@@ -11,7 +11,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import statsmodels.api as sm
 
 
-# Helper Function: Save Chart as Image
+# Define save_chart_as_image function
 def save_chart_as_image(fig, filename="chart.png"):
     buffer = io.BytesIO()
     fig.savefig(buffer, format="png", bbox_inches="tight")
@@ -19,7 +19,7 @@ def save_chart_as_image(fig, filename="chart.png"):
     return buffer
 
 
-# Validate DataFrame
+# Helper function to validate DataFrame
 def validate_dataframe(df):
     if df is None:
         st.error("The DataFrame is not defined.")

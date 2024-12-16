@@ -19,17 +19,28 @@ def save_chart_as_image(fig, filename="chart.png"):
     return buffer
 
 # Section: Data Cleaning and Descriptive Statistics
+# Function to check if DataFrame is valid
+def validate_dataframe(df):
+    if df is None:
+        st.error("The DataFrame is not defined.")
+        return False
+    if df.empty:
+        st.error("The uploaded file resulted in an empty DataFrame. Please check the file.")
+        return False
+    return True
+
+# Function for data cleaning and descriptive stats
 def data_cleaning_and_descriptive(df):
     st.header("1. Data Cleaning")
-    
-    # Check if the DataFrame is empty
-    if df.empty:
-        st.error("The dataset is empty. Please upload a valid file.")
-        return
-    
+
+    if not validate_dataframe(df):
+        return  # Exit function if DataFrame is invalid
+
     st.subheader("Handle Missing Values")
-    missing_option = st.radio("Choose a method to handle missing values:", 
-                               ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data"))
+    missing_option = st.radio(
+        "Choose a method to handle missing values:",
+        ("Leave as is", "Impute with Mean (Numerical Only)", "Remove Rows with Missing Data"),
+    )
     if missing_option == "Impute with Mean (Numerical Only)":
         numeric_cols = df.select_dtypes(include="number").columns
         df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())

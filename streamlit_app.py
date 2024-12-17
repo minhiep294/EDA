@@ -368,46 +368,30 @@ def subgroup_analysis(df, num_list, cat_list):
             st.error(f"Error generating Pie Charts: {e}")
 
 # Linear Regression Analysis
-def debug_and_clean_data(df, x_columns, y_column, cat_list):
+def clean_and_prepare_data(df, x_columns, y_column, cat_list):
     """
     Cleans and validates input data for regression analysis.
     Converts categorical variables into dummies and ensures all data is numeric.
     """
     try:
-        st.write("### Step 1: Data Types Before Cleaning")
-        st.write(df.dtypes)
-
         # Select relevant columns
         X = df[x_columns].copy()
 
-        # Step 2: Convert categorical columns to dummy variables
+        # Convert categorical columns to dummy variables
         for col in x_columns:
             if col in cat_list:
-                st.write(f"Converting '{col}' to dummy variables...")
                 X = pd.get_dummies(X, columns=[col], drop_first=True, dtype=float)
-        
-        st.write("### Step 2: After Dummy Variable Conversion")
-        st.write(X.head())
 
-        # Step 3: Ensure all X columns are numeric
+        # Ensure all X columns are numeric
         X = X.apply(pd.to_numeric, errors='coerce')
 
-        # Step 4: Process the dependent variable (y)
+        # Process the dependent variable (y)
         y = pd.to_numeric(df[y_column], errors='coerce')
 
-        st.write("### Step 3: Missing Values Check")
-        st.write(f"Missing values in X:\n{X.isna().sum()}")
-        st.write(f"Missing values in y: {y.isna().sum()}")
-
-        # Step 5: Drop rows with NaN in X or y
+        # Drop rows with NaN values
         combined = pd.concat([X, y], axis=1).dropna()
         X_clean = combined.drop(columns=[y_column])
         y_clean = combined[y_column]
-
-        st.write("### Step 4: Final Cleaned Data")
-        st.write("Cleaned Independent Variables (X):", X_clean.head())
-        st.write("Cleaned Dependent Variable (Y):", y_clean.head())
-        st.write(f"Final Shapes - X: {X_clean.shape}, y: {y_clean.shape}")
 
         return X_clean, y_clean
 
@@ -426,8 +410,8 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x and y:
             try:
-                # Clean and validate the data
-                X, y_values = debug_and_clean_data(df, [x], y, cat_list)
+                # Clean and prepare data
+                X, y_values = clean_and_prepare_data(df, [x], y, cat_list)
 
                 if X is not None and y_values is not None:
                     # Add a constant for the intercept
@@ -446,8 +430,8 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x_cols and y:
             try:
-                # Clean and validate the data
-                X, y_values = debug_and_clean_data(df, x_cols, y, cat_list)
+                # Clean and prepare data
+                X, y_values = clean_and_prepare_data(df, x_cols, y, cat_list)
 
                 if X is not None and y_values is not None:
                     # Add a constant for the intercept

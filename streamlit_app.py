@@ -24,7 +24,7 @@ openai_api_key = st.secrets["openai_api_key"] if "openai_api_key" in st.secrets 
 client = OpenAI(api_key=openai_api_key)
 
 def describe_chart_with_ai(image_path):
-    """Encodes the chart image and uses GPT-4 Vision to describe it."""
+    """Encodes the chart image and uses GPT-4o Vision to describe it."""
     if not openai_api_key:
         st.error("Please enter your OpenAI API key to proceed.")
         return "No API Key"
@@ -40,7 +40,7 @@ def describe_chart_with_ai(image_path):
     # Send request to OpenAI API
     try:
         response = client.chat.completions.create(
-            model="gpt-4-vision-preview",
+            model="gpt-4o",  # Updated model name
             messages=[
                 {
                     "role": "user",

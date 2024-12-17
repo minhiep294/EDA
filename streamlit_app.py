@@ -761,7 +761,6 @@ if df is not None:
             "Univariate Analysis",
             "Bivariate Analysis",
             "Multivariate Analysis",
-            "Subgroup Analysis",
             "Linear Regression",
         ],
     )
@@ -785,9 +784,6 @@ if df is not None:
     elif analysis_type == "Multivariate Analysis":
         filtered_df = filter_data(df)  # Apply filters
         multivariate_analysis(filtered_df, num_list, cat_list)
-    elif analysis_type == "Subgroup Analysis":
-        filtered_df = filter_data(df)  # Apply filters
-        subgroup_analysis(filtered_df, num_list, cat_list)
     elif analysis_type == "Linear Regression":
         filtered_df = filter_data(df)  # Apply filters
         linear_regression_analysis(filtered_df, num_list, cat_list)

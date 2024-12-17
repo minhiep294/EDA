@@ -429,8 +429,13 @@ if uploaded_file:
         )
 
         # Identify Numerical and Categorical Columns
-        num_list = [col for col in df.columns if pd.api.types.is_numeric_dtype(df[col])]
-        cat_list = [col for col in df.columns if pd.api.types.is_string_dtype(df[col])]
+        num_list = df.select_dtypes(include=np.number).columns.tolist()
+        cat_list = df.select_dtypes(include='object').columns.tolist()
+
+        if not num_list:
+            st.warning("No numerical columns found in the dataset.")
+        if not cat_list:
+            st.warning("No categorical columns found in the dataset.")
 
         # Perform Analysis Based on Selection
         if analysis_type == "Data Cleaning & Descriptive":

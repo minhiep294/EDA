@@ -296,112 +296,211 @@ def describe_chart_with_gemini(image_path):
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")
-    chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient"])
-    use_ai_description = st.checkbox("Use AI to describe the chart (via Gemini)")
+
+    # Chart Type Selection
+    chart_type = st.selectbox(
+        "Choose chart type:", 
+        ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient", "Subgroup Analysis"]
+    )
+
+    use_ai_description = st.checkbox("Use AI to describe the chart")  # Optional AI description
 
     # Scatter Plot
     if chart_type == "Scatter Plot":
-        x = st.selectbox("Select Independent Variable (X):", num_list)
-        y = st.selectbox("Select Dependent Variable (Y):", num_list)
+        x = st.selectbox("Select X-axis (numerical):", num_list)
+        y = st.selectbox("Select Y-axis (numerical):", num_list)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
+        sample_size = st.slider("Sample Size:", min_value=100, max_value=min(1000, len(df)), value=500)
 
+        sampled_df = df.sample(n=sample_size, random_state=42)
         fig, ax = plt.subplots()
-        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=df, ax=ax)
+        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=sampled_df, ax=ax)
         ax.set_title(f"Scatter Plot: {y} vs {x}")
-        chart_path = save_chart_as_image(fig)
-
+        chart_path = save_chart_as_image(fig, filename="scatter_plot.png")
         st.pyplot(fig)
+
+        if use_ai_description:
+            with st.spinner("Generating AI description for the chart..."):
+                ai_description = describe_chart_with_gemini(chart_path)
+            st.markdown(f"**AI Description:** {ai_description}")
 
     # Bar Plot
     elif chart_type == "Bar Plot":
-        x = st.selectbox("Select Independent Variable (categorical):", cat_list)
-        y = st.selectbox("Select Dependent Variable (numerical):", num_list)
-
+        x = st.selectbox("Select X-axis (categorical):", cat_list)
+        y = st.selectbox("Select Y-axis (numerical):", num_list)
         fig, ax = plt.subplots()
-        sns.barplot(x=x, y=y, data=df, ax=ax)
+        sns.barplot(x=x, y=y, data=df, ci=None, ax=ax)
         ax.set_title(f"Bar Plot: {y} grouped by {x}")
-        chart_path = save_chart_as_image(fig)
-
+        chart_path = save_chart_as_image(fig, filename="bar_plot.png")
         st.pyplot(fig)
+
+        if use_ai_description:
+            with st.spinner("Generating AI description for the chart..."):
+                ai_description = describe_chart_with_gemini(chart_path)
+            st.markdown(f"**AI Description:** {ai_description}")
 
     # Line Chart
     elif chart_type == "Line Chart":
         x = st.selectbox("Select X-axis Variable:", df.columns)
         y = st.selectbox("Select Y-axis Variable (numerical):", num_list)
-
         fig, ax = plt.subplots()
         sns.lineplot(x=x, y=y, data=df, ax=ax)
         ax.set_title(f"Line Chart: {y} over {x}")
-        chart_path = save_chart_as_image(fig)
-
+        chart_path = save_chart_as_image(fig, filename="line_chart.png")
         st.pyplot(fig)
+
+        if use_ai_description:
+            with st.spinner("Generating AI description for the chart..."):
+                ai_description = describe_chart_with_gemini(chart_path)
+            st.markdown(f"**AI Description:** {ai_description}")
 
     # Correlation Matrix
     elif chart_type == "Correlation Coefficient":
-        selected_vars = st.multiselect("Select Variables for Correlation Matrix:", num_list, default=num_list)
+        selected_vars = st.multiselect("Select numerical variables:", num_list, default=num_list)
         if len(selected_vars) >= 2:
             fig, ax = plt.subplots(figsize=(10, 8))
             corr_matrix = df[selected_vars].corr()
             sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
             ax.set_title("Correlation Matrix")
-            chart_path = save_chart_as_image(fig)
+            chart_path = save_chart_as_image(fig, filename="correlation_matrix.png")
             st.pyplot(fig)
+
+            if use_ai_description:
+                with st.spinner("Generating AI description for the chart..."):
+                    ai_description = describe_chart_with_gemini(chart_path)
+                st.markdown(f"**AI Description:** {ai_description}")
         else:
-            st.warning("Please select at least two variables for the correlation matrix.")
-            return
+            st.warning("Please select at least two numerical variables.")
 
-    # Generate AI Description if Enabled
-    if use_ai_description:
-        with st.spinner("Generating AI description for the chart with Gemini..."):
-            ai_description = describe_chart_with_gemini(chart_path)
-        st.markdown(f"**AI Description:** {ai_description}")
+    # Subgroup Analysis
+    elif chart_type == "Subgroup Analysis":
+        st.subheader("Subgroup Analysis")
 
-    # Add Export Button for the Chart
-    with open(chart_path, "rb") as file:
-        st.download_button(
-            label="Download Chart as PNG",
-            data=file,
-            file_name="bivariate_chart.png",
-            mime="image/png"
-        )
+        num_col = st.selectbox("Select Numerical Variable:", num_list)
+        cat_col = st.selectbox("Select Categorical Variable:", cat_list)
+        chart_types = st.multiselect("Select Charts to Generate:", ["Box Plot", "Bar Chart", "Pie Chart"])
+
+        if "Box Plot" in chart_types:
+            try:
+                st.markdown("### Box Plot")
+                fig, ax = plt.subplots(figsize=(10, 6))
+                sns.boxplot(x=cat_col, y=num_col, data=df, ax=ax)
+                chart_path = save_chart_as_image(fig, filename="subgroup_box_plot.png")
+                st.pyplot(fig)
+
+                if use_ai_description:
+                    with st.spinner("Generating AI description for the chart..."):
+                        ai_description = describe_chart_with_gemini(chart_path)
+                    st.markdown(f"**AI Description:** {ai_description}")
+            except Exception as e:
+                st.error(f"Error generating Box Plot: {e}")
+
+        if "Bar Chart" in chart_types:
+            st.markdown("### Bar Chart")
+            agg_funcs = st.multiselect("Select Metrics for Bar Chart:", ["mean", "sum", "count"], default=["mean"])
+            try:
+                grouped = df.groupby(cat_col)[num_col].agg(agg_funcs).reset_index()
+                for func in agg_funcs:
+                    fig, ax = plt.subplots(figsize=(10, 6))
+                    sns.barplot(x=cat_col, y=func, data=grouped, ci=None, ax=ax)
+                    ax.set_title(f"{func.capitalize()} of {num_col} by {cat_col}")
+                    chart_path = save_chart_as_image(fig, filename=f"subgroup_bar_chart_{func}.png")
+                    st.pyplot(fig)
+
+                    if use_ai_description:
+                        with st.spinner("Generating AI description for the chart..."):
+                            ai_description = describe_chart_with_gemini(chart_path)
+                        st.markdown(f"**AI Description:** {ai_description}")
+            except Exception as e:
+                st.error(f"Error generating Bar Chart: {e}")
+
+        if "Pie Chart" in chart_types:
+            st.markdown("### Pie Chart")
+            agg_func = st.selectbox("Select Aggregation for Pie Chart:", ["mean", "sum", "count"], index=0)
+            try:
+                grouped = df.groupby(cat_col)[num_col].agg(agg_func).reset_index()
+                grouped = grouped.sort_values(by=num_col, ascending=False)
+                fig, ax = plt.subplots()
+                ax.pie(grouped[num_col], labels=grouped[cat_col], autopct="%1.1f%%", startangle=90)
+                ax.set_title(f"{agg_func.capitalize()} of {num_col} by {cat_col}")
+                chart_path = save_chart_as_image(fig, filename="subgroup_pie_chart.png")
+                st.pyplot(fig)
+
+                if use_ai_description:
+                    with st.spinner("Generating AI description for the chart..."):
+                        ai_description = describe_chart_with_gemini(chart_path)
+                    st.markdown(f"**AI Description:** {ai_description}")
+            except Exception as e:
+                st.error(f"Error generating Pie Chart: {e}")
         
-# Multivariate Analysis
 def multivariate_analysis(df, num_list, cat_list):
     st.subheader("Multivariate Analysis")
 
     chart_type = st.selectbox("Choose chart type:", 
                               ["Pair Plot", "Correlation Matrix", "Grouped Bar Chart", "Bubble Chart", "Heat Map"])
-    
+
+    use_ai_description = st.checkbox("Use AI to describe the chart")  # Toggle AI chart descriptions
+
+    # Pair Plot
     if chart_type == "Pair Plot":
         selected_vars = st.multiselect("Select numerical variables for Pair Plot:", num_list, default=num_list)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
         if selected_vars:
             try:
                 pairplot_fig = sns.pairplot(df[selected_vars], hue=None if hue == "None" else hue)
+                chart_path = save_chart_as_image(pairplot_fig.fig, filename="pair_plot.png")
                 st.pyplot(pairplot_fig)
+
+                # AI description if enabled
+                if use_ai_description:
+                    with st.spinner("Generating AI description for the chart..."):
+                        ai_description = describe_chart_with_gemini(chart_path)
+                    st.markdown(f"**AI Description:** {ai_description}")
             except Exception as e:
                 st.error(f"Error generating Pair Plot: {e}")
 
+    # Correlation Matrix
     elif chart_type == "Correlation Matrix":
         selected_vars = st.multiselect("Select numerical variables:", num_list, default=num_list)
         if len(selected_vars) >= 2:
-            fig, ax = plt.subplots(figsize=(10, 8))
-            corr_matrix = df[selected_vars].corr()
-            sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
-            st.pyplot(fig)
+            try:
+                fig, ax = plt.subplots(figsize=(10, 8))
+                corr_matrix = df[selected_vars].corr()
+                sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
+                ax.set_title("Correlation Matrix")
+                chart_path = save_chart_as_image(fig, filename="correlation_matrix.png")
+                st.pyplot(fig)
+
+                # AI description if enabled
+                if use_ai_description:
+                    with st.spinner("Generating AI description for the chart..."):
+                        ai_description = describe_chart_with_gemini(chart_path)
+                    st.markdown(f"**AI Description:** {ai_description}")
+            except Exception as e:
+                st.error(f"Error generating Correlation Matrix: {e}")
         else:
             st.warning("Select at least two numerical variables for correlation analysis.")
 
+    # Grouped Bar Chart
     elif chart_type == "Grouped Bar Chart":
         x = st.selectbox("Select X-axis (categorical):", cat_list)
         hue = st.selectbox("Select Grouping Variable (categorical):", cat_list)
         try:
             fig, ax = plt.subplots()
             sns.countplot(x=x, hue=hue, data=df, ax=ax)
+            ax.set_title(f"Grouped Bar Chart: {x} grouped by {hue}")
+            chart_path = save_chart_as_image(fig, filename="grouped_bar_chart.png")
             st.pyplot(fig)
+
+            # AI description if enabled
+            if use_ai_description:
+                with st.spinner("Generating AI description for the chart..."):
+                    ai_description = describe_chart_with_gemini(chart_path)
+                st.markdown(f"**AI Description:** {ai_description}")
         except Exception as e:
             st.error(f"Error generating Grouped Bar Chart: {e}")
 
+    # Bubble Chart
     elif chart_type == "Bubble Chart":
         x = st.selectbox("Select X-axis (numerical):", num_list)
         y = st.selectbox("Select Y-axis (numerical):", num_list)
@@ -410,10 +509,19 @@ def multivariate_analysis(df, num_list, cat_list):
         try:
             fig, ax = plt.subplots()
             sns.scatterplot(data=df, x=x, y=y, size=size, hue=None if color == "None" else color, sizes=(20, 200), ax=ax)
+            ax.set_title(f"Bubble Chart: {y} vs {x}")
+            chart_path = save_chart_as_image(fig, filename="bubble_chart.png")
             st.pyplot(fig)
+
+            # AI description if enabled
+            if use_ai_description:
+                with st.spinner("Generating AI description for the chart..."):
+                    ai_description = describe_chart_with_gemini(chart_path)
+                st.markdown(f"**AI Description:** {ai_description}")
         except Exception as e:
             st.error(f"Error generating Bubble Chart: {e}")
 
+    # Heat Map
     elif chart_type == "Heat Map":
         x = st.selectbox("Select X-axis (categorical):", cat_list)
         y = st.selectbox("Select Y-axis (categorical):", cat_list)
@@ -422,53 +530,42 @@ def multivariate_analysis(df, num_list, cat_list):
             pivot_table = df.pivot_table(index=y, columns=x, values=value, aggfunc="mean")
             fig, ax = plt.subplots()
             sns.heatmap(pivot_table, annot=True, cmap="coolwarm", ax=ax)
+            ax.set_title(f"Heat Map: {value} by {x} and {y}")
+            chart_path = save_chart_as_image(fig, filename="heat_map.png")
             st.pyplot(fig)
+
+            # AI description if enabled
+            if use_ai_description:
+                with st.spinner("Generating AI description for the chart..."):
+                    ai_description = describe_chart_with_gemini(chart_path)
+                st.markdown(f"**AI Description:** {ai_description}")
         except Exception as e:
             st.error(f"Error generating Heat Map: {e}")
 
-# Subgroup Analysis
-def subgroup_analysis(df, num_list, cat_list):
-    st.subheader("Subgroup Analysis")
+# Function to Save Chart as Image
+def save_chart_as_image(fig, filename="chart.png"):
+    """Saves the chart as an image file and returns the file path."""
+    fig.savefig(filename, bbox_inches="tight")
+    return filename
 
-    num_col = st.selectbox("Select Numerical Variable:", num_list)
-    cat_col = st.selectbox("Select Categorical Variable:", cat_list)
-    chart_types = st.multiselect("Select Charts to Generate:", ["Box Plot", "Bar Chart", "Pie Chart"])
+# Function to Describe Chart with Gemini API
+def describe_chart_with_gemini(image_path):
+    """Sends a chart image to Gemini API for description."""
+    try:
+        import google.generativeai as genai
+        if "gemini_api_key" in st.secrets:
+            genai.configure(api_key=st.secrets["gemini_api_key"])
+        else:
+            st.error("Please provide your Google Gemini API key.")
+            return "No API Key provided."
 
-    if "Box Plot" in chart_types:
-        try:
-            st.markdown("### Box Plot")
-            fig, ax = plt.subplots(figsize=(10, 6))
-            sns.boxplot(x=cat_col, y=num_col, data=df, ax=ax)
-            st.pyplot(fig)
-        except Exception as e:
-            st.error(f"Error generating Box Plot: {e}")
-
-    if "Bar Chart" in chart_types:
-        st.markdown("### Bar Chart")
-        agg_funcs = st.multiselect("Select Metrics for Bar Chart:", ["mean", "sum", "count"], default=["mean"])
-
-        try:
-            grouped = df.groupby(cat_col)[num_col].agg(agg_funcs).reset_index()
-            for func in agg_funcs:
-                fig, ax = plt.subplots(figsize=(10, 6))
-                sns.barplot(x=cat_col, y=func, data=grouped, ci=None, ax=ax)
-                ax.set_title(f"{func.capitalize()} of {num_col} by {cat_col}")
-                st.pyplot(fig)
-        except Exception as e:
-            st.error(f"Error generating Bar Chart: {e}")
-
-    if "Pie Chart" in chart_types:
-        st.markdown("### Pie Charts")
-        agg_func = st.selectbox("Select Aggregation for Pie Chart:", ["mean", "sum", "count"], index=0)
-        try:
-            grouped = df.groupby(cat_col)[num_col].agg(agg_func).reset_index()
-            grouped = grouped.sort_values(by=num_col, ascending=False)
-            fig, ax = plt.subplots()
-            ax.pie(grouped[num_col], labels=grouped[cat_col], autopct="%1.1f%%", startangle=90)
-            ax.set_title(f"{agg_func.capitalize()} of {num_col} by {cat_col}")
-            st.pyplot(fig)
-        except Exception as e:
-            st.error(f"Error generating Pie Charts: {e}")
+        model = genai.GenerativeModel("gemini-pro-vision")
+        with open(image_path, "rb") as image_file:
+            response = model.generate_content(["Describe this chart and summarize its insights."], image=image_file)
+        return response.text
+    except Exception as e:
+        st.error(f"Error with Gemini API: {e}")
+        return "Failed to generate AI description."
 
 # Linear Regression Analysis
 def clean_and_prepare_data(df, x_columns, y_column, cat_list):
@@ -507,12 +604,17 @@ def clean_and_prepare_data(df, x_columns, y_column, cat_list):
 
 def linear_regression_analysis(df, num_list, cat_list):
     """
-    Main function for performing linear regression analysis.
+    Main function for performing linear regression analysis with optional AI explanations.
     """
     st.subheader("Linear Regression Analysis")
 
+    # Allow users to enable AI explanations
+    use_ai_description = st.checkbox("Use AI to describe the regression results")
+
+    # Choose regression type
     regression_type = st.radio("Select Regression Type:", ["Simple Regression", "Multiple Regression"])
 
+    # Simple Linear Regression
     if regression_type == "Simple Regression":
         x = st.selectbox("Select Independent Variable (X):", ["Select Variable"] + num_list + cat_list)
         y = st.selectbox("Select Dependent Variable (Y):", ["Select Variable"] + num_list)
@@ -530,9 +632,17 @@ def linear_regression_analysis(df, num_list, cat_list):
                     model = sm.OLS(y_values, X).fit()
                     st.write(model.summary())
 
+                    # Generate AI explanation if enabled
+                    if use_ai_description:
+                        with st.spinner("Generating AI description for the regression results..."):
+                            ai_description = describe_regression_with_gemini(model.summary().as_text())
+                        st.markdown("### AI Description:")
+                        st.markdown(f"**{ai_description}**")
+
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
 
+    # Multiple Linear Regression
     elif regression_type == "Multiple Regression":
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y = st.selectbox("Select Dependent Variable (Y):", ["Select Variable"] + num_list)
@@ -550,8 +660,67 @@ def linear_regression_analysis(df, num_list, cat_list):
                     model = sm.OLS(y_values, X).fit()
                     st.write(model.summary())
 
+                    # Generate AI explanation if enabled
+                    if use_ai_description:
+                        with st.spinner("Generating AI description for the regression results..."):
+                            ai_description = describe_regression_with_gemini(model.summary().as_text())
+                        st.markdown("### AI Description:")
+                        st.markdown(f"**{ai_description}**")
+
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
+
+
+def clean_and_prepare_data(df, x_cols, y_col, cat_list):
+    """
+    Cleans and prepares the data for regression analysis.
+    Converts categorical variables into dummy variables if needed.
+    """
+    try:
+        # Prepare X (independent variables)
+        X = df[x_cols]
+        for col in x_cols:
+            if col in cat_list:
+                X = pd.get_dummies(X, columns=[col], drop_first=True)
+
+        # Prepare y (dependent variable)
+        y = df[y_col]
+
+        # Drop missing values
+        combined_data = pd.concat([X, y], axis=1).dropna()
+        X_cleaned = combined_data.iloc[:, :-1]
+        y_cleaned = combined_data.iloc[:, -1]
+
+        return X_cleaned, y_cleaned
+    except Exception as e:
+        st.error(f"Error cleaning and preparing data: {e}")
+        return None, None
+
+
+def describe_regression_with_gemini(regression_summary):
+    """
+    Sends the regression summary to Gemini API and gets a descriptive explanation.
+    """
+    try:
+        import google.generativeai as genai
+
+        # Configure Gemini API Key
+        if "gemini_api_key" in st.secrets:
+            genai.configure(api_key=st.secrets["gemini_api_key"])
+        else:
+            st.error("Please provide your Google Gemini API key.")
+            return "No API Key provided."
+
+        # Send regression summary to Gemini
+        model = genai.GenerativeModel("gemini-pro")
+        response = model.generate_content(
+            [f"Provide a detailed, simple-to-understand explanation for the following regression summary:\n\n{regression_summary}"]
+        )
+        return response.text
+    except Exception as e:
+        st.error(f"Error with Gemini API: {e}")
+        return "Failed to generate AI description."
+
 
                 
 # Main App

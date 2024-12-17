@@ -378,7 +378,7 @@ def linear_regression_analysis(df, num_list, cat_list):
         y = st.selectbox("Select Dependent Variable (Y):", num_list)
         if x and y:
             try:
-                # Handle categorical and numerical data
+                # Convert categorical variable to dummy variables if needed
                 if x in cat_list:
                     X = pd.get_dummies(df[x], drop_first=True)
                 else:
@@ -387,28 +387,17 @@ def linear_regression_analysis(df, num_list, cat_list):
                 # Add constant term
                 X = sm.add_constant(X)
 
-                # Ensure the dependent variable is numeric
+                # Ensure dependent variable is numeric
                 y_values = pd.to_numeric(df[y], errors='coerce')
 
-                # Remove any NaN values resulting from coercion
+                # Remove any NaN values
                 valid_indices = ~y_values.isna()
-                y_values = y_values[valid_indices]
                 X = X.loc[valid_indices]
+                y_values = y_values[valid_indices]
 
                 # Fit the model
                 model = sm.OLS(y_values, X).fit()
                 st.write(model.summary())
-
-                # Visualization for Simple Regression
-                if x in num_list:
-                    plt.figure(figsize=(8, 6))
-                    plt.scatter(df[x], df[y], label="Actual Data", alpha=0.7)
-                    plt.plot(df[x], model.predict(X), color="red", label="Regression Line")
-                    plt.xlabel(f"{x} (Independent Variable)")
-                    plt.ylabel(f"{y} (Dependent Variable)")
-                    plt.title("Simple Linear Regression")
-                    plt.legend()
-                    st.pyplot(plt)
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
 
@@ -417,36 +406,25 @@ def linear_regression_analysis(df, num_list, cat_list):
         y = st.selectbox("Select Dependent Variable (Y):", num_list)
         if x_cols and y:
             try:
-                # Handle categorical and numerical data
+                # Convert categorical variables to dummy variables
                 X = pd.get_dummies(df[x_cols], drop_first=True)
 
                 # Add constant term
                 X = sm.add_constant(X)
 
-                # Ensure the dependent variable is numeric
+                # Ensure dependent variable is numeric
                 y_values = pd.to_numeric(df[y], errors='coerce')
 
-                # Remove any NaN values resulting from coercion
+                # Remove any NaN values
                 valid_indices = ~y_values.isna()
-                y_values = y_values[valid_indices]
                 X = X.loc[valid_indices]
+                y_values = y_values[valid_indices]
 
                 # Fit the model
                 model = sm.OLS(y_values, X).fit()
                 st.write(model.summary())
-
-                # Visualization for Multiple Regression (Predicted vs Actual)
-                plt.figure(figsize=(8, 6))
-                plt.scatter(y_values, model.predict(X), alpha=0.7)
-                plt.plot([y_values.min(), y_values.max()], [y_values.min(), y_values.max()], color="red", label="Perfect Prediction")
-                plt.xlabel("Actual Values")
-                plt.ylabel("Predicted Values")
-                plt.title("Multiple Regression: Predicted vs Actual")
-                plt.legend()
-                st.pyplot(plt)
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
-
 # Main App
 # Initialize df to None
 df = None

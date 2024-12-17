@@ -368,34 +368,34 @@ def subgroup_analysis(df, num_list, cat_list):
             st.error(f"Error generating Pie Charts: {e}")
 
 # Linear Regression Analysis
-def clean_and_prepare_data(df, x_columns, y_column, cat_list):
+def clean_data(df, x_cols, y_col, cat_list):
     """
-    Function to clean and prepare the dataset for regression.
-    Ensures numeric data, handles missing values, and transforms categorical columns.
+    Cleans and prepares data for regression analysis.
+    Ensures numeric data, converts categorical to dummy variables, and removes invalid rows.
     """
     try:
-        # Process independent variables (X)
-        X = df[x_columns].copy()
+        # Select Independent Variables
+        X = df[x_cols].copy()
 
-        # Convert categorical columns to dummy variables
-        cat_cols = [col for col in x_columns if col in cat_list]
-        if cat_cols:
-            X = pd.get_dummies(X, columns=cat_cols, drop_first=True, dtype=float)
+        # Convert Categorical Columns to Dummy Variables
+        for col in x_cols:
+            if col in cat_list:
+                X = pd.get_dummies(X, columns=[col], drop_first=True, dtype=float)
 
-        # Convert all columns to numeric (force errors to NaN)
+        # Ensure All Data in X is Numeric
         X = X.apply(pd.to_numeric, errors='coerce')
 
-        # Process dependent variable (y)
-        y = pd.to_numeric(df[y_column], errors='coerce')
+        # Process Dependent Variable (y)
+        y = pd.to_numeric(df[y_col], errors='coerce')
 
-        # Combine X and y to drop rows with missing data
+        # Combine and Drop Missing Data
         data = pd.concat([X, y], axis=1).dropna()
-        X = data.drop(columns=[y_column])
-        y = data[y_column]
+        X = data.drop(columns=[y_col])
+        y = data[y_col]
 
         return X, y
     except Exception as e:
-        st.error(f"Error during data preparation: {e}")
+        st.error(f"Data cleaning error: {e}")
         return None, None
 
 def linear_regression_analysis(df, num_list, cat_list):
@@ -409,18 +409,18 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x and y:
             try:
-                X, y_values = clean_and_prepare_data(df, [x], y, cat_list)
+                # Clean and Prepare Data
+                X, y_values = clean_data(df, [x], y, cat_list)
 
-                # Debug clean data
-                st.write("Cleaned Independent Variables (X):")
-                st.write(X.head())
-                st.write("Cleaned Dependent Variable (Y):")
-                st.write(y_values.head())
+                # Debugging: Print Cleaned Data
+                st.write("Cleaned Independent Variable (X):", X.head())
+                st.write("Cleaned Dependent Variable (Y):", y_values.head())
 
-                # Add constant and fit model
+                # Add Constant and Fit Model
                 X = sm.add_constant(X)
                 model = sm.OLS(y_values, X).fit()
                 st.write(model.summary())
+
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
 
@@ -430,18 +430,18 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x_cols and y:
             try:
-                X, y_values = clean_and_prepare_data(df, x_cols, y, cat_list)
+                # Clean and Prepare Data
+                X, y_values = clean_data(df, x_cols, y, cat_list)
 
-                # Debug clean data
-                st.write("Cleaned Independent Variables (X):")
-                st.write(X.head())
-                st.write("Cleaned Dependent Variable (Y):")
-                st.write(y_values.head())
+                # Debugging: Print Cleaned Data
+                st.write("Cleaned Independent Variables (X):", X.head())
+                st.write("Cleaned Dependent Variable (Y):", y_values.head())
 
-                # Add constant and fit model
+                # Add Constant and Fit Model
                 X = sm.add_constant(X)
                 model = sm.OLS(y_values, X).fit()
                 st.write(model.summary())
+
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
                 

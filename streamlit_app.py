@@ -376,6 +376,80 @@ def linear_regression_analysis(df, num_list, cat_list):
     if regression_type == "Simple Regression":
         x = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y = st.selectbox("Select Dependent Variable (Y):", num_list)
+
+        if x and y:
+            try:
+                # Handle Categorical Variable
+                if x in cat_list:
+                    X = pd.get_dummies(df[x], prefix=x, drop_first=True)
+                else:
+                    X = df[[x]]
+
+                # Ensure X and y are numeric and aligned
+                X = X.apply(pd.to_numeric, errors='coerce')  # Convert everything in X to numeric
+                y_values = pd.to_numeric(df[y], errors='coerce')
+
+                # Drop rows with missing or invalid values
+                data = pd.concat([X, y_values], axis=1).dropna()
+                X = data.drop(columns=[y])
+                y_values = data[y]
+
+                # Debug to ensure X and y are clean
+                st.write("Independent Variables (X):")
+                st.write(X.head())
+                st.write("Dependent Variable (Y):")
+                st.write(y_values.head())
+
+                # Add a constant for the intercept
+                X = sm.add_constant(X)
+
+                # Fit the Model
+                model = sm.OLS(y_values, X).fit()
+                st.write(model.summary())
+
+            except Exception as e:
+                st.error(f"Error during regression analysis: {e}")
+
+    elif regression_type == "Multiple Regression":
+        x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
+        y = st.selectbox("Select Dependent Variable (Y):", num_list)
+
+        if x_cols and y:
+            try:
+                # Handle Categorical Variables
+                X = pd.get_dummies(df[x_cols], prefix=x_cols, drop_first=True)
+
+                # Ensure X and y are numeric and aligned
+                X = X.apply(pd.to_numeric, errors='coerce')  # Convert everything in X to numeric
+                y_values = pd.to_numeric(df[y], errors='coerce')
+
+                # Drop rows with missing or invalid values
+                data = pd.concat([X, y_values], axis=1).dropna()
+                X = data.drop(columns=[y])
+                y_values = data[y]
+
+                # Debug to ensure X and y are clean
+                st.write("Independent Variables (X):")
+                st.write(X.head())
+                st.write("Dependent Variable (Y):")
+                st.write(y_values.head())
+
+                # Add a constant for the intercept
+                X = sm.add_constant(X)
+
+                # Fit the Model
+                model = sm.OLS(y_values, X).fit()
+                st.write(model.summary())
+
+            except Exception as e:
+                st.error(f"Error during regression analysis: {e}")def linear_regression_analysis(df, num_list, cat_list):
+    st.subheader("Linear Regression Analysis")
+
+    regression_type = st.radio("Select Regression Type:", ["Simple Regression", "Multiple Regression"])
+
+    if regression_type == "Simple Regression":
+        x = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
+        y = st.selectbox("Select Dependent Variable (Y):", num_list)
         
         if x and y:
             try:

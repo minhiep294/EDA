@@ -23,24 +23,24 @@ def save_chart_as_image(fig, filename="chart.png"):
 openai_api_key = st.secrets["openai_api_key"] if "openai_api_key" in st.secrets else st.text_input("Enter OpenAI API Key:", type="password")
 client = OpenAI(api_key=openai_api_key)
 
+# Function to Encode Image to Base64
+def encode_image(image_path):
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+# Function to Describe Chart with AI
 def describe_chart_with_ai(image_path):
-    """Encodes the chart image and uses GPT-4o Vision to describe it."""
-    if not openai_api_key:
-        st.error("Please enter your OpenAI API key to proceed.")
-        return "No API Key"
+    if not client:
+        st.error("Please enter a valid OpenAI API key.")
+        return "No API Key provided."
 
-    # Function to encode the image as Base64
-    def encode_image(image_path):
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
-
-    # Encode the image
+    # Encode the chart image
     base64_image = encode_image(image_path)
 
-    # Send request to OpenAI API
+    # Call OpenAI API
     try:
         response = client.chat.completions.create(
-            model="gpt-4o",  # Updated model name
+            model="gpt-4-turbo",  # Use GPT-4 Turbo (update if you have access to GPT-4o)
             messages=[
                 {
                     "role": "user",
@@ -56,8 +56,8 @@ def describe_chart_with_ai(image_path):
         return description
     except Exception as e:
         st.error(f"Error with OpenAI API: {e}")
-        return "AI description failed."
-
+        return "Failed to generate AI description."
+        
 # Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
     st.header("1. Data Cleaning")

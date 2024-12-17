@@ -21,44 +21,44 @@ def save_chart_as_image(fig, filename="chart.png"):
     buffer.seek(0)
     return buffer
 
-# Securely input your OpenAI API key
-openai_api_key = st.secrets["openai_api_key"] if "openai_api_key" in st.secrets else st.text_input("Enter OpenAI API Key:", type="password")
-client = OpenAI(api_key=openai_api_key)
+# Set up Gemini API Key
+GEMINI_API_KEY = st.secrets["gemini_api_key"] if "gemini_api_key" in st.secrets else st.text_input("Enter Google Gemini API Key:", type="password")
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
-# Function to Encode Image to Base64
+# Function to encode image to Base64
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
+        return base64.b64encode(image_file.read()).decode("utf-8")
 
-# Function to Describe Chart with AI
-def describe_chart_with_ai(image_path):
-    if not client:
-        st.error("Please enter a valid OpenAI API key.")
+# Function to describe chart using Gemini API
+def describe_chart_with_gemini(image_path):
+    if not GEMINI_API_KEY:
+        st.error("Please enter a valid Google Gemini API key.")
         return "No API Key provided."
 
-    # Encode the chart image
-    base64_image = encode_image(image_path)
-
-    # Call OpenAI API
     try:
-        response = client.chat.completions.create(
-            model="gpt-4-turbo",  # Use GPT-4 Turbo (update if you have access to GPT-4o)
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "Describe this chart and summarize its insights."},
-                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}},
-                    ],
-                }
-            ],
-            max_tokens=300,
-        )
-        description = response.choices[0].message.content
+        # Load Gemini model
+        model = genai.GenerativeModel("gemini-pro-vision")
+
+        # Open the image and generate the description
+        with open(image_path, "rb") as image_file:
+            response = model.generate_content(
+                ["Describe this chart and summarize its insights."],
+                image=image_file
+            )
+
+        # Extract the text from the response
+        description = response.text
         return description
     except Exception as e:
-        st.error(f"Error with OpenAI API: {e}")
+        st.error(f"Error with Gemini API: {e}")
         return "Failed to generate AI description."
+
+# Function to save chart as an image
+def save_chart_as_image(fig, filename="chart.png"):
+    fig.savefig(filename, bbox_inches="tight")
+    return filename
         
 # Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
@@ -192,16 +192,17 @@ def filter_data(df):
 
     return filtered_df
 
-# Univariate Analysis
 def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
+
+    # Checkbox for AI Description
+    use_ai_description = st.checkbox("Use AI to describe the chart")
 
     # Numerical Analysis
     if variable_type == "Numerical":
         col = st.selectbox("Select a numerical variable:", num_list)
         chart_type = st.selectbox("Choose chart type:", ["Histogram", "Box Plot", "Density Plot", "QQ Plot"])
-        use_ai_description = st.checkbox("Use AI to describe the chart")
 
         # Generate the chart
         fig, ax = plt.subplots()
@@ -219,24 +220,20 @@ def univariate_analysis(df, num_list, cat_list):
             stats.probplot(df[col], dist="norm", plot=ax)
             ax.set_title(f"QQ Plot of {col}")
         
-        # Save the chart
-        chart_path = "chart.png"
-        fig.savefig(chart_path, bbox_inches="tight")
-
-        # Display the chart
+        # Save and display the chart
+        chart_path = save_chart_as_image(fig, filename=f"univariate_{col}_{chart_type}.png")
         st.pyplot(fig)
 
-        # Generate AI description if user chooses to enable it
+        # Generate AI description if enabled
         if use_ai_description:
             with st.spinner("Generating AI description for the chart..."):
-                ai_description = describe_chart_with_ai(chart_path)
+                ai_description = describe_chart_with_gemini(chart_path)
             st.markdown(f"**AI Description:** {ai_description}")
 
     # Categorical Analysis
     elif variable_type == "Categorical":
         col = st.selectbox("Select a categorical variable:", cat_list)
         chart_type = st.selectbox("Choose chart type:", ["Count Plot", "Bar Chart", "Pie Chart"])
-        use_ai_description = st.checkbox("Use AI to describe the chart")
 
         # Generate the chart
         fig, ax = plt.subplots()
@@ -251,97 +248,122 @@ def univariate_analysis(df, num_list, cat_list):
             ax.set_ylabel("")
             ax.set_title(f"Pie Chart of {col}")
 
-        # Save the chart
-        chart_path = "chart.png"
-        fig.savefig(chart_path, bbox_inches="tight")
-
-        # Display the chart
+        # Save and display the chart
+        chart_path = save_chart_as_image(fig, filename=f"univariate_{col}_{chart_type}.png")
         st.pyplot(fig)
 
-        # Generate AI description if user chooses to enable it
+        # Generate AI description if enabled
         if use_ai_description:
             with st.spinner("Generating AI description for the chart..."):
-                ai_description = describe_chart_with_ai(chart_path)
+                ai_description = describe_chart_with_gemini(chart_path)
             st.markdown(f"**AI Description:** {ai_description}")
+
+# Function to Save Chart as Image
+def save_chart_as_image(fig, filename="chart.png"):
+    """Saves the chart as an image file and returns the file path."""
+    fig.savefig(filename, bbox_inches="tight")
+    return filename
+
+# Function to Describe Chart with Gemini API
+def describe_chart_with_gemini(image_path):
+    """Sends a chart image to Gemini API for description."""
+    try:
+        import google.generativeai as genai
+        from google.generativeai.types import content_types
+
+        # Configure Gemini API Key
+        if "gemini_api_key" in st.secrets:
+            genai.configure(api_key=st.secrets["gemini_api_key"])
+        else:
+            st.error("Please provide your Google Gemini API key.")
+            return "No API Key provided."
+
+        # Load Gemini model
+        model = genai.GenerativeModel("gemini-pro-vision")
+
+        # Generate description
+        with open(image_path, "rb") as image_file:
+            response = model.generate_content(
+                ["Describe this chart and summarize its insights."],
+                image=image_file
+            )
+        return response.text
+
+    except Exception as e:
+        st.error(f"Error with Gemini API: {e}")
+        return "Failed to generate AI description."
         
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")
     chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient"])
-
-    use_ai_description = st.checkbox("Use AI to describe the chart")
+    use_ai_description = st.checkbox("Use AI to describe the chart (via Gemini)")
 
     # Scatter Plot
     if chart_type == "Scatter Plot":
-        x = st.selectbox("Select Independent Variable (X, numerical):", num_list)
-        y = st.selectbox("Select Dependent Variable (Y, numerical):", num_list)
+        x = st.selectbox("Select Independent Variable (X):", num_list)
+        y = st.selectbox("Select Dependent Variable (Y):", num_list)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
-        sample_size = st.slider("Sample Size:", min_value=100, max_value=min(1000, len(df)), value=500)
 
-        sampled_df = df.sample(n=sample_size, random_state=42)
         fig, ax = plt.subplots()
-        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=sampled_df, ax=ax)
+        sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=df, ax=ax)
         ax.set_title(f"Scatter Plot: {y} vs {x}")
+        chart_path = save_chart_as_image(fig)
+
         st.pyplot(fig)
 
     # Bar Plot
     elif chart_type == "Bar Plot":
         x = st.selectbox("Select Independent Variable (categorical):", cat_list)
         y = st.selectbox("Select Dependent Variable (numerical):", num_list)
+
         fig, ax = plt.subplots()
         sns.barplot(x=x, y=y, data=df, ax=ax)
         ax.set_title(f"Bar Plot: {y} grouped by {x}")
+        chart_path = save_chart_as_image(fig)
+
         st.pyplot(fig)
 
     # Line Chart
     elif chart_type == "Line Chart":
-        x = st.selectbox("Select X-axis Variable (numerical or categorical):", df.columns)
+        x = st.selectbox("Select X-axis Variable:", df.columns)
         y = st.selectbox("Select Y-axis Variable (numerical):", num_list)
+
         fig, ax = plt.subplots()
         sns.lineplot(x=x, y=y, data=df, ax=ax)
         ax.set_title(f"Line Chart: {y} over {x}")
+        chart_path = save_chart_as_image(fig)
+
         st.pyplot(fig)
 
-    # Correlation Coefficient
+    # Correlation Matrix
     elif chart_type == "Correlation Coefficient":
-        selected_vars = st.multiselect(
-            "Select Variables for Correlation Analysis (default: all numerical):",
-            num_list,
-            default=num_list
-        )
-        if len(selected_vars) < 2:
-            st.warning("Please select at least two variables for correlation analysis.")
-        else:
-            advanced = st.checkbox("Advanced Options (Choose Correlation Method)")
-            if advanced:
-                corr_method = st.radio("Choose Correlation Method:", ["Pearson", "Spearman", "Kendall"])
-            else:
-                corr_method = "Pearson"
-
+        selected_vars = st.multiselect("Select Variables for Correlation Matrix:", num_list, default=num_list)
+        if len(selected_vars) >= 2:
             fig, ax = plt.subplots(figsize=(10, 8))
-            corr_matrix = df[selected_vars].corr(method=corr_method.lower())
+            corr_matrix = df[selected_vars].corr()
             sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
-            ax.set_title(f"Correlation Matrix ({corr_method} Method)")
+            ax.set_title("Correlation Matrix")
+            chart_path = save_chart_as_image(fig)
             st.pyplot(fig)
+        else:
+            st.warning("Please select at least two variables for the correlation matrix.")
+            return
 
-    # Save the chart
-    chart_path = "bivariate_chart.png"
-    fig.savefig(chart_path, bbox_inches="tight")
-
-    # Optional AI Description
+    # Generate AI Description if Enabled
     if use_ai_description:
-        with st.spinner("Generating AI description for the chart..."):
-            ai_description = describe_chart_with_ai(chart_path)
+        with st.spinner("Generating AI description for the chart with Gemini..."):
+            ai_description = describe_chart_with_gemini(chart_path)
         st.markdown(f"**AI Description:** {ai_description}")
 
-    # Export the chart
-    buffer = save_chart_as_image(fig)
-    st.download_button(
-        label="Download Chart as PNG",
-        data=buffer,
-        file_name=f"{chart_type.lower().replace(' ', '_')}_chart.png",
-        mime="image/png"
-    )
+    # Add Export Button for the Chart
+    with open(chart_path, "rb") as file:
+        st.download_button(
+            label="Download Chart as PNG",
+            data=file,
+            file_name="bivariate_chart.png",
+            mime="image/png"
+        )
         
 # Multivariate Analysis
 def multivariate_analysis(df, num_list, cat_list):

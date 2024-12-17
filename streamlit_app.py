@@ -327,14 +327,10 @@ def multivariate_analysis(df, num_list, cat_list):
 def subgroup_analysis(df, num_list, cat_list):
     st.subheader("Subgroup Analysis")
 
-    # Select Numerical and Categorical Variables
     num_col = st.selectbox("Select Numerical Variable:", num_list)
     cat_col = st.selectbox("Select Categorical Variable:", cat_list)
-
-    # Allow user to choose chart types
     chart_types = st.multiselect("Select Charts to Generate:", ["Box Plot", "Bar Chart", "Pie Chart"])
 
-    # Box Plot
     if "Box Plot" in chart_types:
         try:
             st.markdown("### Box Plot")
@@ -344,7 +340,6 @@ def subgroup_analysis(df, num_list, cat_list):
         except Exception as e:
             st.error(f"Error generating Box Plot: {e}")
 
-    # Bar Chart
     if "Bar Chart" in chart_types:
         st.markdown("### Bar Chart")
         agg_funcs = st.multiselect("Select Metrics for Bar Chart:", ["mean", "sum", "count"], default=["mean"])
@@ -359,129 +354,48 @@ def subgroup_analysis(df, num_list, cat_list):
         except Exception as e:
             st.error(f"Error generating Bar Chart: {e}")
 
-    # Pie Chart
     if "Pie Chart" in chart_types:
         st.markdown("### Pie Charts")
         agg_func = st.selectbox("Select Aggregation for Pie Chart:", ["mean", "sum", "count"], index=0)
-        
         try:
             grouped = df.groupby(cat_col)[num_col].agg(agg_func).reset_index()
             grouped = grouped.sort_values(by=num_col, ascending=False)
-
-            # Create multiple pie charts dynamically
-            for idx, row in grouped.iterrows():
-                fig, ax = plt.subplots()
-                ax.pie(
-                    row[[num_col]],
-                    labels=[f"{cat_col}: {row[cat_col]}"],
-                    autopct="%1.1f%%",
-                    startangle=90
-                )
-                ax.set_title(f"Pie Chart: {agg_func.capitalize()} of {num_col} for {row[cat_col]}")
-                st.pyplot(fig)
-
+            fig, ax = plt.subplots()
+            ax.pie(grouped[num_col], labels=grouped[cat_col], autopct="%1.1f%%", startangle=90)
+            ax.set_title(f"{agg_func.capitalize()} of {num_col} by {cat_col}")
+            st.pyplot(fig)
         except Exception as e:
             st.error(f"Error generating Pie Charts: {e}")
-
 
 # Linear Regression Analysis
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 
-    # Choose Regression Type
     regression_type = st.radio("Select Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
-        st.markdown("### Simple Linear Regression")
         x = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y = st.selectbox("Select Dependent Variable (Y):", num_list)
-
         if x and y:
             try:
-                # Prepare X and y
-                if x in cat_list:  # Convert categorical variable to dummy variables
-                    X = pd.get_dummies(df[x], drop_first=True)
-                else:
-                    X = df[[x]]
-                X = sm.add_constant(X)  # Add constant for intercept
-
+                X = pd.get_dummies(df[x], drop_first=True) if x in cat_list else df[[x]]
+                X = sm.add_constant(X)
                 y_values = df[y]
-
-                # Fit the regression model
                 model = sm.OLS(y_values, X).fit()
-                st.markdown("### Regression Results")
                 st.write(model.summary())
-
-                # Display Coefficients and Confidence Intervals
-                st.markdown("#### Coefficients and Confidence Intervals")
-                coef_df = pd.DataFrame({
-                    "Coefficient": model.params,
-                    "P-Value": model.pvalues,
-                    "T-Statistic": model.tvalues,
-                    "Lower CI": model.conf_int()[0],
-                    "Upper CI": model.conf_int()[1]
-                })
-                st.dataframe(coef_df)
-
-                # Export as CSV
-                csv_data = coef_df.to_csv(index=True).encode('utf-8')
-                st.download_button("Download Results as CSV", data=csv_data, file_name="simple_regression_results.csv", mime="text/csv")
-
-                # Residuals plot
-                st.markdown("#### Residuals Plot")
-                fig, ax = plt.subplots()
-                sns.residplot(x=model.fittedvalues, y=model.resid, lowess=True, line_kws={"color": "red", "lw": 2}, ax=ax)
-                ax.set_xlabel("Fitted Values")
-                ax.set_ylabel("Residuals")
-                ax.set_title("Residuals vs Fitted Values")
-                st.pyplot(fig)
-
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
 
     elif regression_type == "Multiple Regression":
-        st.markdown("### Multiple Linear Regression")
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y = st.selectbox("Select Dependent Variable (Y):", num_list)
-
         if x_cols and y:
             try:
-                # Prepare X and y
-                X = df[x_cols]
-                X = pd.get_dummies(X, drop_first=True)  # Convert categorical variables to dummies
-                X = sm.add_constant(X)  # Add constant for intercept
-
+                X = pd.get_dummies(df[x_cols], drop_first=True)
+                X = sm.add_constant(X)
                 y_values = df[y]
-
-                # Fit the regression model
                 model = sm.OLS(y_values, X).fit()
-                st.markdown("### Regression Results")
                 st.write(model.summary())
-
-                # Display Coefficients and Confidence Intervals
-                st.markdown("#### Coefficients and Confidence Intervals")
-                coef_df = pd.DataFrame({
-                    "Coefficient": model.params,
-                    "P-Value": model.pvalues,
-                    "T-Statistic": model.tvalues,
-                    "Lower CI": model.conf_int()[0],
-                    "Upper CI": model.conf_int()[1]
-                })
-                st.dataframe(coef_df)
-
-                # Export as CSV
-                csv_data = coef_df.to_csv(index=True).encode('utf-8')
-                st.download_button("Download Results as CSV", data=csv_data, file_name="multiple_regression_results.csv", mime="text/csv")
-
-                # Residuals plot
-                st.markdown("#### Residuals Plot")
-                fig, ax = plt.subplots()
-                sns.residplot(x=model.fittedvalues, y=model.resid, lowess=True, line_kws={"color": "red", "lw": 2}, ax=ax)
-                ax.set_xlabel("Fitted Values")
-                ax.set_ylabel("Residuals")
-                ax.set_title("Residuals vs Fitted Values")
-                st.pyplot(fig)
-
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
 

@@ -368,48 +368,34 @@ def subgroup_analysis(df, num_list, cat_list):
             st.error(f"Error generating Pie Charts: {e}")
 
 # Linear Regression Analysis
-def clean_and_validate_data(df, x_columns, y_column, cat_list):
+def debug_data_types(df, x_columns, y_column):
     """
-    Cleans, validates, and ensures numeric data for regression.
-    Converts categorical to dummy variables, removes NaN, and forces numeric types.
+    Function to debug the data types and values of regression inputs.
     """
-    try:
-        st.write("### Step 1: Original Data Types")
-        st.write(df.dtypes)
+    st.write("### Debugging: Data Types and Unique Values")
+    for col in x_columns + [y_column]:
+        st.write(f"Column: {col}")
+        st.write(f"Data Type: {df[col].dtype}")
+        st.write(f"Unique Values: {df[col].unique()}")
+        st.write("------------")
 
-        # Process Independent Variables (X)
-        X = df[x_columns].copy()
+    # Force conversion to numeric and detect non-numeric entries
+    st.write("### After Forcing Numeric Conversion")
+    for col in x_columns + [y_column]:
+        df[col] = pd.to_numeric(df[col], errors='coerce')
+        st.write(f"Column: {col}, Missing Values After Conversion: {df[col].isna().sum()}")
 
-        # Convert categorical columns to dummy variables
-        cat_cols = [col for col in x_columns if col in cat_list]
-        if cat_cols:
-            X = pd.get_dummies(X, columns=cat_cols, drop_first=True, dtype=float)
-        
-        st.write("### Step 2: After Converting Categorical Columns to Dummies")
-        st.write(X.head())
+def clean_and_prepare_data(df, x_columns, y_column, cat_list):
+    # Handle categorical columns by converting to dummies
+    X = pd.get_dummies(df[x_columns], drop_first=True, dtype=float)
+    y = pd.to_numeric(df[y_column], errors='coerce')
 
-        # Force all columns to numeric
-        X = X.apply(pd.to_numeric, errors='coerce')
-        st.write("### Step 3: After Forcing Numeric Conversion")
-        st.write(X.dtypes)
+    # Drop rows with missing values
+    combined = pd.concat([X, y], axis=1).dropna()
+    X = combined.drop(columns=[y_column])
+    y = combined[y_column]
 
-        # Process Dependent Variable (y)
-        y = pd.to_numeric(df[y_column], errors='coerce')
-
-        # Combine X and y and drop rows with NaN values
-        combined_data = pd.concat([X, y], axis=1).dropna()
-        X = combined_data.drop(columns=[y_column])
-        y = combined_data[y_column]
-
-        st.write("### Step 4: Final Cleaned Independent and Dependent Variables")
-        st.write("Independent Variables (X):", X.head())
-        st.write("Dependent Variable (Y):", y.head())
-
-        return X, y
-    except Exception as e:
-        st.error(f"Data cleaning and validation error: {e}")
-        return None, None
-
+    return X, y
 def linear_regression_analysis(df, num_list, cat_list):
     st.subheader("Linear Regression Analysis")
 

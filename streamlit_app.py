@@ -400,7 +400,8 @@ def linear_regression_analysis(df, num_list, cat_list):
                 st.error(f"Error during regression analysis: {e}")
 
 # Main App
-st.title("Interactive EDA Application")
+# Initialize df to None
+df = None
 
 # File Upload Section
 uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["csv", "xlsx"])
@@ -408,34 +409,41 @@ uploaded_file = st.file_uploader("Upload your dataset (CSV or Excel):", type=["c
 if uploaded_file:
     file_extension = uploaded_file.name.split(".")[-1].lower()
     try:
+        # Load CSV or Excel file based on the extension
         if file_extension == "csv":
             df = pd.read_csv(uploaded_file)
-        else:
+        elif file_extension == "xlsx":
             sheet_names = pd.ExcelFile(uploaded_file, engine="openpyxl").sheet_names
             selected_sheet = st.selectbox("Select sheet to load", sheet_names)
             df = pd.read_excel(uploaded_file, sheet_name=selected_sheet, engine="openpyxl")
+        else:
+            st.error("Unsupported file format. Please upload a CSV or Excel file.")
+            df = None
     except Exception as e:
         st.error(f"Error loading file: {e}")
         df = None
 
+# Proceed only if df is successfully loaded
 if df is not None:
     st.write("### Dataset Preview")
     st.dataframe(df.head())
 
-    # Apply Filters (optional step)
-    filtered_df = filter_data(df)  # Use the filter_data function to create a filtered dataset
-    st.write("### Filtered Dataset Preview")
-    st.dataframe(filtered_df.head())
-
     # Sidebar Navigation
     analysis_type = st.sidebar.radio(
         "Choose Analysis Type:",
-        ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
+        [
+            "Data Cleaning & Descriptive",
+            "Univariate Analysis",
+            "Bivariate Analysis",
+            "Multivariate Analysis",
+            "Subgroup Analysis",
+            "Linear Regression",
+        ],
     )
 
     # Identify Numerical and Categorical Columns
-    num_list = filtered_df.select_dtypes(include=np.number).columns.tolist()
-    cat_list = filtered_df.select_dtypes(include='object').columns.tolist()
+    num_list = df.select_dtypes(include=np.number).columns.tolist()
+    cat_list = df.select_dtypes(include="object").columns.tolist()
 
     if not num_list:
         st.warning("No numerical columns found in the dataset.")
@@ -444,14 +452,21 @@ if df is not None:
 
     # Perform Analysis Based on Selection
     if analysis_type == "Data Cleaning & Descriptive":
-        data_cleaning_and_descriptive(filtered_df)
+        data_cleaning_and_descriptive(df)
     elif analysis_type == "Univariate Analysis":
-        univariate_analysis(filtered_df, num_list, cat_list)
+        univariate_analysis(df, num_list, cat_list)
     elif analysis_type == "Bivariate Analysis":
-        bivariate_analysis(filtered_df, num_list, cat_list)
+        bivariate_analysis(df, num_list, cat_list)
     elif analysis_type == "Multivariate Analysis":
+        filtered_df = filter_data(df)  # Apply filters
         multivariate_analysis(filtered_df, num_list, cat_list)
     elif analysis_type == "Subgroup Analysis":
+        filtered_df = filter_data(df)  # Apply filters
         subgroup_analysis(filtered_df, num_list, cat_list)
     elif analysis_type == "Linear Regression":
+        filtered_df = filter_data(df)  # Apply filters
         linear_regression_analysis(filtered_df, num_list, cat_list)
+
+else:
+    st.warning("Please upload a dataset to begin.")
+

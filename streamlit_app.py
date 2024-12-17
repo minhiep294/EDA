@@ -1,5 +1,7 @@
 import io
+import base64
 import streamlit as st
+from openai import OpenAI
 import pandas as pd
 import numpy as np
 import seaborn as sns
@@ -16,6 +18,45 @@ def save_chart_as_image(fig, filename="chart.png"):
     fig.savefig(buffer, format="png", bbox_inches="tight")
     buffer.seek(0)
     return buffer
+
+# Securely input your OpenAI API key
+openai_api_key = st.secrets["openai_api_key"] if "openai_api_key" in st.secrets else st.text_input("Enter OpenAI API Key:", type="password")
+client = OpenAI(api_key=openai_api_key)
+
+def describe_chart_with_ai(image_path):
+    """Encodes the chart image and uses GPT-4 Vision to describe it."""
+    if not openai_api_key:
+        st.error("Please enter your OpenAI API key to proceed.")
+        return "No API Key"
+
+    # Function to encode the image as Base64
+    def encode_image(image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+
+    # Encode the image
+    base64_image = encode_image(image_path)
+
+    # Send request to OpenAI API
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4-vision-preview",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Describe this chart and summarize its insights."},
+                        {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}},
+                    ],
+                }
+            ],
+            max_tokens=300,
+        )
+        description = response.choices[0].message.content
+        return description
+    except Exception as e:
+        st.error(f"Error with OpenAI API: {e}")
+        return "AI description failed."
 
 # Section: Data Cleaning and Descriptive Statistics
 def data_cleaning_and_descriptive(df):
@@ -153,15 +194,15 @@ def filter_data(df):
 def univariate_analysis(df, num_list, cat_list):
     st.subheader("Univariate Analysis")
     variable_type = st.radio("Choose variable type:", ["Numerical", "Categorical"])
-    
+
+    # Numerical Analysis
     if variable_type == "Numerical":
         col = st.selectbox("Select a numerical variable:", num_list)
-        chart_type = st.selectbox(
-            "Choose chart type:",
-            ["Histogram", "Box Plot", "Density Plot", "QQ Plot"]
-        )
+        chart_type = st.selectbox("Choose chart type:", ["Histogram", "Box Plot", "Density Plot", "QQ Plot"])
+        use_ai_description = st.checkbox("Use AI to describe the chart")
+
+        # Generate the chart
         fig, ax = plt.subplots()
-        
         if chart_type == "Histogram":
             bins = st.slider("Number of bins:", min_value=5, max_value=50, value=20)
             sns.histplot(df[col], bins=bins, kde=True, ax=ax)
@@ -176,16 +217,27 @@ def univariate_analysis(df, num_list, cat_list):
             stats.probplot(df[col], dist="norm", plot=ax)
             ax.set_title(f"QQ Plot of {col}")
         
+        # Save the chart
+        chart_path = "chart.png"
+        fig.savefig(chart_path, bbox_inches="tight")
+
+        # Display the chart
         st.pyplot(fig)
 
+        # Generate AI description if user chooses to enable it
+        if use_ai_description:
+            with st.spinner("Generating AI description for the chart..."):
+                ai_description = describe_chart_with_ai(chart_path)
+            st.markdown(f"**AI Description:** {ai_description}")
+
+    # Categorical Analysis
     elif variable_type == "Categorical":
         col = st.selectbox("Select a categorical variable:", cat_list)
-        chart_type = st.selectbox(
-            "Choose chart type:",
-            ["Count Plot", "Bar Chart", "Pie Chart"]
-        )
+        chart_type = st.selectbox("Choose chart type:", ["Count Plot", "Bar Chart", "Pie Chart"])
+        use_ai_description = st.checkbox("Use AI to describe the chart")
+
+        # Generate the chart
         fig, ax = plt.subplots()
-        
         if chart_type == "Count Plot":
             sns.countplot(x=col, data=df, ax=ax)
             ax.set_title(f"Count Plot of {col}")
@@ -193,29 +245,44 @@ def univariate_analysis(df, num_list, cat_list):
             df[col].value_counts().plot.bar(ax=ax)
             ax.set_title(f"Bar Chart of {col}")
         elif chart_type == "Pie Chart":
-            df[col].value_counts().plot.pie(
-                autopct="%1.1f%%", startangle=90, ax=ax
-            )
+            df[col].value_counts().plot.pie(autopct="%1.1f%%", startangle=90, ax=ax)
             ax.set_ylabel("")
             ax.set_title(f"Pie Chart of {col}")
-        
+
+        # Save the chart
+        chart_path = "chart.png"
+        fig.savefig(chart_path, bbox_inches="tight")
+
+        # Display the chart
         st.pyplot(fig)
+
+        # Generate AI description if user chooses to enable it
+        if use_ai_description:
+            with st.spinner("Generating AI description for the chart..."):
+                ai_description = describe_chart_with_ai(chart_path)
+            st.markdown(f"**AI Description:** {ai_description}")
         
 # Bivariate Analysis
 def bivariate_analysis(df, num_list, cat_list):
     st.subheader("Bivariate Analysis")
     chart_type = st.selectbox("Choose chart type:", ["Scatter Plot", "Bar Plot", "Line Chart", "Correlation Coefficient"])
+
+    use_ai_description = st.checkbox("Use AI to describe the chart")
+
+    # Scatter Plot
     if chart_type == "Scatter Plot":
         x = st.selectbox("Select Independent Variable (X, numerical):", num_list)
         y = st.selectbox("Select Dependent Variable (Y, numerical):", num_list)
         hue = st.selectbox("Optional Hue (categorical):", ["None"] + cat_list)
         sample_size = st.slider("Sample Size:", min_value=100, max_value=min(1000, len(df)), value=500)
-        
+
         sampled_df = df.sample(n=sample_size, random_state=42)
         fig, ax = plt.subplots()
         sns.scatterplot(x=x, y=y, hue=None if hue == "None" else hue, data=sampled_df, ax=ax)
         ax.set_title(f"Scatter Plot: {y} vs {x}")
         st.pyplot(fig)
+
+    # Bar Plot
     elif chart_type == "Bar Plot":
         x = st.selectbox("Select Independent Variable (categorical):", cat_list)
         y = st.selectbox("Select Dependent Variable (numerical):", num_list)
@@ -223,6 +290,8 @@ def bivariate_analysis(df, num_list, cat_list):
         sns.barplot(x=x, y=y, data=df, ax=ax)
         ax.set_title(f"Bar Plot: {y} grouped by {x}")
         st.pyplot(fig)
+
+    # Line Chart
     elif chart_type == "Line Chart":
         x = st.selectbox("Select X-axis Variable (numerical or categorical):", df.columns)
         y = st.selectbox("Select Y-axis Variable (numerical):", num_list)
@@ -230,14 +299,14 @@ def bivariate_analysis(df, num_list, cat_list):
         sns.lineplot(x=x, y=y, data=df, ax=ax)
         ax.set_title(f"Line Chart: {y} over {x}")
         st.pyplot(fig)
+
+    # Correlation Coefficient
     elif chart_type == "Correlation Coefficient":
-        # Select numerical variables for the correlation matrix
         selected_vars = st.multiselect(
             "Select Variables for Correlation Analysis (default: all numerical):",
             num_list,
             default=num_list
         )
-        # Ensure at least two variables are selected
         if len(selected_vars) < 2:
             st.warning("Please select at least two variables for correlation analysis.")
         else:
@@ -245,22 +314,32 @@ def bivariate_analysis(df, num_list, cat_list):
             if advanced:
                 corr_method = st.radio("Choose Correlation Method:", ["Pearson", "Spearman", "Kendall"])
             else:
-                corr_method = "Pearson"  # Default method
-    
-            # Generate and display correlation matrix
+                corr_method = "Pearson"
+
             fig, ax = plt.subplots(figsize=(10, 8))
             corr_matrix = df[selected_vars].corr(method=corr_method.lower())
             sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", ax=ax)
             ax.set_title(f"Correlation Matrix ({corr_method} Method)")
             st.pyplot(fig)
-        # Add export option
-        buffer = save_chart_as_image(fig)
-        st.download_button(
-            label="Download Chart as PNG",
-            data=buffer,
-            file_name=f"{col}_{chart_type.lower().replace(' ', '_')}.png",
-            mime="image/png"
-        )            
+
+    # Save the chart
+    chart_path = "bivariate_chart.png"
+    fig.savefig(chart_path, bbox_inches="tight")
+
+    # Optional AI Description
+    if use_ai_description:
+        with st.spinner("Generating AI description for the chart..."):
+            ai_description = describe_chart_with_ai(chart_path)
+        st.markdown(f"**AI Description:** {ai_description}")
+
+    # Export the chart
+    buffer = save_chart_as_image(fig)
+    st.download_button(
+        label="Download Chart as PNG",
+        data=buffer,
+        file_name=f"{chart_type.lower().replace(' ', '_')}_chart.png",
+        mime="image/png"
+    )
         
 # Multivariate Analysis
 def multivariate_analysis(df, num_list, cat_list):

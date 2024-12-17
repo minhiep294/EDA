@@ -374,6 +374,9 @@ def clean_and_prepare_data(df, x_columns, y_column, cat_list):
     Converts categorical variables into dummies and ensures all data is numeric.
     """
     try:
+        if not x_columns or not y_column:
+            return None, None  # Return None if no variables are selected
+
         # Select relevant columns
         X = df[x_columns].copy()
 
@@ -400,15 +403,18 @@ def clean_and_prepare_data(df, x_columns, y_column, cat_list):
         return None, None
 
 def linear_regression_analysis(df, num_list, cat_list):
+    """
+    Main function for performing linear regression analysis.
+    """
     st.subheader("Linear Regression Analysis")
 
     regression_type = st.radio("Select Regression Type:", ["Simple Regression", "Multiple Regression"])
 
     if regression_type == "Simple Regression":
-        x = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
-        y = st.selectbox("Select Dependent Variable (Y):", num_list)
+        x = st.selectbox("Select Independent Variable (X):", ["Select Variable"] + num_list + cat_list)
+        y = st.selectbox("Select Dependent Variable (Y):", ["Select Variable"] + num_list)
 
-        if x and y:
+        if x != "Select Variable" and y != "Select Variable":
             try:
                 # Clean and prepare data
                 X, y_values = clean_and_prepare_data(df, [x], y, cat_list)
@@ -426,9 +432,9 @@ def linear_regression_analysis(df, num_list, cat_list):
 
     elif regression_type == "Multiple Regression":
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
-        y = st.selectbox("Select Dependent Variable (Y):", num_list)
+        y = st.selectbox("Select Dependent Variable (Y):", ["Select Variable"] + num_list)
 
-        if x_cols and y:
+        if x_cols and y != "Select Variable":
             try:
                 # Clean and prepare data
                 X, y_values = clean_and_prepare_data(df, x_cols, y, cat_list)
@@ -446,6 +452,7 @@ def linear_regression_analysis(df, num_list, cat_list):
 
                 
 # Main App
+st.title("Interactive EDA App")
 # Initialize df to None
 df = None
 

@@ -368,57 +368,54 @@ def subgroup_analysis(df, num_list, cat_list):
             st.error(f"Error generating Pie Charts: {e}")
 
 # Linear Regression Analysis
-def debug_data_types(df, x_columns, y_column):
-    """
-    Function to debug the data types and unique values of regression inputs.
-    """
-    st.write("### Debugging Data Types and Unique Values")
-    for col in x_columns + [y_column]:
-        st.write(f"Column: {col}")
-        st.write(f"Data Type: {df[col].dtype}")
-        st.write(f"Unique Values: {df[col].unique()[:10]}")  # Display first 10 unique values
-        st.write("------------")
-
 def clean_and_prepare_data(df, x_columns, y_column, cat_list):
     """
-    Cleans and prepares the data for regression.
-    Handles categorical variables and ensures all inputs are numeric.
+    Cleans, validates, and prepares data for regression.
+    Handles multiple categorical variables by creating dummy variables.
+    Ensures all inputs are numeric and properly aligned.
     """
     try:
-        # Create a copy of the DataFrame to avoid modifying original data
+        # Step 1: Copy and convert categorical variables to dummies
         X = df[x_columns].copy()
 
-        # Convert categorical variables into dummy variables
+        st.write("### Step 1: Original Data Types and Head")
+        st.write(X.dtypes)
+        st.write(X.head())
+
+        # Step 2: Convert categorical columns to dummy variables
         for col in x_columns:
             if col in cat_list:
-                X = pd.get_dummies(X, columns=[col], drop_first=True)
+                st.write(f"Converting categorical column '{col}' to dummy variables...")
+                X = pd.get_dummies(X, columns=[col], drop_first=True, dtype=float)
+        
+        st.write("### Step 2: After Converting to Dummies")
+        st.write(X.head())
 
-        # Ensure all columns in X are numeric
-        X = X.apply(pd.to_numeric, errors='coerce')
-
-        # Process the dependent variable (y)
+        # Step 3: Ensure the dependent variable (y) is numeric
         y = pd.to_numeric(df[y_column], errors='coerce')
 
-        # Combine X and y to drop rows with NaN values
+        # Step 4: Drop rows with NaN values
         combined = pd.concat([X, y], axis=1).dropna()
-
-        # Separate cleaned X and y
         X_clean = combined.drop(columns=[y_column])
         y_clean = combined[y_column]
 
-        # Reset indices
+        # Step 5: Reset indices for alignment
         X_clean = X_clean.reset_index(drop=True)
         y_clean = y_clean.reset_index(drop=True)
 
-        return X_clean, y_clean
+        st.write("### Step 3: Cleaned Data")
+        st.write("Cleaned Independent Variables (X):", X_clean.head())
+        st.write("Cleaned Dependent Variable (Y):", y_clean.head())
+        st.write(f"Final Shapes - X: {X_clean.shape}, y: {y_clean.shape}")
 
+        return X_clean, y_clean
     except Exception as e:
-        st.error(f"Error in cleaning and preparing data: {e}")
+        st.error(f"Data preparation error: {e}")
         return None, None
 
 def linear_regression_analysis(df, num_list, cat_list):
     """
-    Main function to run linear regression analysis.
+    Main function for performing linear regression analysis.
     """
     st.subheader("Linear Regression Analysis")
 
@@ -430,20 +427,11 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x and y:
             try:
-                # Debug and validate data
-                debug_data_types(df, [x], y)
-
-                # Clean and prepare the data
+                # Clean and prepare data
                 X, y_values = clean_and_prepare_data(df, [x], y, cat_list)
 
-                # Check if X and y are not None
                 if X is not None and y_values is not None:
-                    st.write("Cleaned Independent Variable (X):")
-                    st.write(X.head())
-                    st.write("Cleaned Dependent Variable (Y):")
-                    st.write(y_values.head())
-
-                    # Add constant and fit the model
+                    # Add a constant and fit the model
                     X = sm.add_constant(X)
                     model = sm.OLS(y_values, X).fit()
                     st.write(model.summary())
@@ -456,20 +444,11 @@ def linear_regression_analysis(df, num_list, cat_list):
 
         if x_cols and y:
             try:
-                # Debug and validate data
-                debug_data_types(df, x_cols, y)
-
-                # Clean and prepare the data
+                # Clean and prepare data
                 X, y_values = clean_and_prepare_data(df, x_cols, y, cat_list)
 
-                # Check if X and y are not None
                 if X is not None and y_values is not None:
-                    st.write("Cleaned Independent Variables (X):")
-                    st.write(X.head())
-                    st.write("Cleaned Dependent Variable (Y):")
-                    st.write(y_values.head())
-
-                    # Add constant and fit the model
+                    # Add a constant and fit the model
                     X = sm.add_constant(X)
                     model = sm.OLS(y_values, X).fit()
                     st.write(model.summary())

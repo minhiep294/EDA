@@ -418,38 +418,40 @@ if uploaded_file:
         st.error(f"Error loading file: {e}")
         df = None
 
-    if df is not None:
-        st.write("### Dataset Preview")
-        st.dataframe(df.head())
+if df is not None:
+    st.write("### Dataset Preview")
+    st.dataframe(df.head())
 
-        # Sidebar Navigation
-        analysis_type = st.sidebar.radio(
-            "Choose Analysis Type:",
-            ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
-        )
+    # Apply Filters (optional step)
+    filtered_df = filter_data(df)  # Use the filter_data function to create a filtered dataset
+    st.write("### Filtered Dataset Preview")
+    st.dataframe(filtered_df.head())
 
-        # Identify Numerical and Categorical Columns
-        num_list = df.select_dtypes(include=np.number).columns.tolist()
-        cat_list = df.select_dtypes(include='object').columns.tolist()
+    # Sidebar Navigation
+    analysis_type = st.sidebar.radio(
+        "Choose Analysis Type:",
+        ["Data Cleaning & Descriptive", "Univariate Analysis", "Bivariate Analysis", "Multivariate Analysis", "Subgroup Analysis", "Linear Regression"]
+    )
 
-        if not num_list:
-            st.warning("No numerical columns found in the dataset.")
-        if not cat_list:
-            st.warning("No categorical columns found in the dataset.")
+    # Identify Numerical and Categorical Columns
+    num_list = filtered_df.select_dtypes(include=np.number).columns.tolist()
+    cat_list = filtered_df.select_dtypes(include='object').columns.tolist()
 
-        # Perform Analysis Based on Selection
-        if analysis_type == "Data Cleaning & Descriptive":
-            data_cleaning_and_descriptive(df)
-        elif analysis_type == "Univariate Analysis":
-            univariate_analysis(df, num_list, cat_list)
-        elif analysis_type == "Bivariate Analysis":
-            bivariate_analysis(df, num_list, cat_list)
-        elif analysis_type == "Multivariate Analysis":
-            multivariate_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Linear Regression":
-            linear_regression_analysis(filtered_df, num_list, cat_list)
-        elif analysis_type == "Subgroup Analysis":
-            subgroup_analysis(filtered_df, num_list, cat_list)
-            
-else:
-    st.warning("Please upload a dataset to begin.")
+    if not num_list:
+        st.warning("No numerical columns found in the dataset.")
+    if not cat_list:
+        st.warning("No categorical columns found in the dataset.")
+
+    # Perform Analysis Based on Selection
+    if analysis_type == "Data Cleaning & Descriptive":
+        data_cleaning_and_descriptive(filtered_df)
+    elif analysis_type == "Univariate Analysis":
+        univariate_analysis(filtered_df, num_list, cat_list)
+    elif analysis_type == "Bivariate Analysis":
+        bivariate_analysis(filtered_df, num_list, cat_list)
+    elif analysis_type == "Multivariate Analysis":
+        multivariate_analysis(filtered_df, num_list, cat_list)
+    elif analysis_type == "Subgroup Analysis":
+        subgroup_analysis(filtered_df, num_list, cat_list)
+    elif analysis_type == "Linear Regression":
+        linear_regression_analysis(filtered_df, num_list, cat_list)

@@ -376,26 +376,26 @@ def linear_regression_analysis(df, num_list, cat_list):
     if regression_type == "Simple Regression":
         x = st.selectbox("Select Independent Variable (X):", num_list + cat_list)
         y = st.selectbox("Select Dependent Variable (Y):", num_list)
+        
         if x and y:
             try:
-                # Convert categorical variable to dummy variables if needed
+                # Convert Categorical Variable to Dummy Variables
                 if x in cat_list:
-                    X = pd.get_dummies(df[x], drop_first=True)
+                    X = pd.get_dummies(df[x], prefix=x, drop_first=True)
                 else:
-                    X = df[[x]]
+                    X = df[[x]].apply(pd.to_numeric, errors='coerce')  # Ensure numeric columns
 
-                # Add constant term
-                X = sm.add_constant(X)
-
-                # Ensure dependent variable is numeric
+                # Ensure Dependent Variable is Numeric
                 y_values = pd.to_numeric(df[y], errors='coerce')
 
-                # Remove any NaN values
-                valid_indices = ~y_values.isna()
-                X = X.loc[valid_indices]
-                y_values = y_values[valid_indices]
+                # Align Data: Drop rows with NaN values
+                X = X.dropna()
+                y_values = y_values.loc[X.index]
 
-                # Fit the model
+                # Add Constant for Intercept
+                X = sm.add_constant(X)
+
+                # Fit the Model
                 model = sm.OLS(y_values, X).fit()
                 st.write(model.summary())
             except Exception as e:
@@ -404,27 +404,28 @@ def linear_regression_analysis(df, num_list, cat_list):
     elif regression_type == "Multiple Regression":
         x_cols = st.multiselect("Select Independent Variables (X):", num_list + cat_list)
         y = st.selectbox("Select Dependent Variable (Y):", num_list)
+        
         if x_cols and y:
             try:
-                # Convert categorical variables to dummy variables
-                X = pd.get_dummies(df[x_cols], drop_first=True)
+                # Convert Categorical Variables to Dummy Variables
+                X = pd.get_dummies(df[x_cols], prefix=x_cols, drop_first=True)
 
-                # Add constant term
-                X = sm.add_constant(X)
-
-                # Ensure dependent variable is numeric
+                # Ensure Dependent Variable is Numeric
                 y_values = pd.to_numeric(df[y], errors='coerce')
 
-                # Remove any NaN values
-                valid_indices = ~y_values.isna()
-                X = X.loc[valid_indices]
-                y_values = y_values[valid_indices]
+                # Align Data: Drop rows with NaN values
+                X = X.dropna()
+                y_values = y_values.loc[X.index]
 
-                # Fit the model
+                # Add Constant for Intercept
+                X = sm.add_constant(X)
+
+                # Fit the Model
                 model = sm.OLS(y_values, X).fit()
                 st.write(model.summary())
             except Exception as e:
                 st.error(f"Error during regression analysis: {e}")
+                
 # Main App
 # Initialize df to None
 df = None
